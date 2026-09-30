@@ -873,14 +873,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================================
-  // 3.1. Real-Time Microphone Capture (MediaRecorder 250ms) & Playback Queue
+  // 3.1. Real-Time Open-Mic Voice Chat (16kHz Raw PCM over WebSocket)
   // =========================================================================
   let mediaStream = null;
-  let mediaRecorder = null;
   let isRecordingAudio = false;
-  let nextAudioScheduleTime = 0;
+  let pcmAudioCtx = null;
+  let pcmSourceNode = null;
+  let pcmProcessorNode = null;
+  const senderPcmTimes = new Map(); // senderId -> nextScheduledPlayTime
+  const playedAudioBurstIds = new Set(); // Prevent double-playback of voice clue bursts
   let speakingTimeout = null;
-  const senderHeaders = new Map();
 
   async function getMicrophoneStream() {
     if (mediaStream && mediaStream.active) return mediaStream;
@@ -900,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function startAudioCapture() {
+  async function startAudioCapture() {
     // If in 2-second burst mode (Describer during PLAYING phase), redirect to burst recorder
     if (currentMicMode === 'BURST_2S') {
       startDescriberBurst();
@@ -909,56 +911,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isRecordingAudio) return;
 
-    getMicrophoneStream().then((stream) => {
+    try {
+      const stream = await getMicrophoneStream();
       if (!stream) return;
 
-      try {
-        let options = {};
-        if (typeof MediaRecorder !== 'undefined') {
-          if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-            options = { mimeType: 'audio/webm;codecs=opus' };
-          } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-            options = { mimeType: 'audio/webm' };
-          } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
-            options = { mimeType: 'audio/ogg;codecs=opus' };
+      initAudio();
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!pcmAudioCtx) {
+        pcmAudioCtx = new AudioCtxClass();
+      }
+      if (pcmAudioCtx.state === 'suspended') {
+        await pcmAudioCtx.resume();
+      }
+
+      pcmSourceNode = pcmAudioCtx.createMediaStreamSource(stream);
+
+      // Buffer size 2048 samples (~45-128ms packets depending on device sample rate)
+      pcmProcessorNode = pcmAudioCtx.createScriptProcessor(2048, 1, 1);
+
+      const targetSampleRate = 16000;
+      const inputSampleRate = pcmAudioCtx.sampleRate;
+
+      pcmProcessorNode.onaudioprocess = (e) => {
+        if (!isRecordingAudio) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+
+        // Simple noise gate / silence filter
+        let sum = 0;
+        for (let i = 0; i < inputData.length; i++) {
+          sum += Math.abs(inputData[i]);
+        }
+        const avg = sum / inputData.length;
+        if (avg < 0.005) {
+          // Silence: skip sending packets to avoid microphone room hiss
+          return;
+        }
+
+        // Downsample to 16000 Hz if needed
+        let resampled;
+        if (inputSampleRate === targetSampleRate) {
+          resampled = inputData;
+        } else {
+          const ratio = inputSampleRate / targetSampleRate;
+          const newLength = Math.round(inputData.length / ratio);
+          resampled = new Float32Array(newLength);
+          for (let i = 0; i < newLength; i++) {
+            resampled[i] = inputData[Math.min(inputData.length - 1, Math.round(i * ratio))];
           }
         }
 
-        mediaRecorder = new MediaRecorder(stream, options);
-        let chunkIndex = 0;
+        // Convert Float32 (-1.0 to 1.0) to 16-bit PCM Int16Array
+        const pcm16 = new Int16Array(resampled.length);
+        for (let i = 0; i < resampled.length; i++) {
+          const s = Math.max(-1, Math.min(1, resampled[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
 
-        mediaRecorder.ondataavailable = async (e) => {
-          if (e.data && e.data.size > 0) {
-            const arrayBuffer = await e.data.arrayBuffer();
-            // Emit raw audio chunks every 250 milliseconds to Socket.io server
-            socket.emit('audio-chunk', {
-              chunk: arrayBuffer,
-              isFirst: (chunkIndex === 0),
-              mimeType: mediaRecorder.mimeType
-            });
-            chunkIndex++;
-          }
-        };
+        socket.emit('voice-pcm', {
+          pcm: pcm16.buffer,
+          sampleRate: targetSampleRate
+        });
+      };
 
-        // Capture audio chunks every 250 milliseconds
-        mediaRecorder.start(250);
-        isRecordingAudio = true;
-        setMicLiveState(true);
-      } catch (err) {
-        console.error('MediaRecorder start error:', err);
-        showToast('⚠️ Could not start microphone recording.', 'danger', '🎙️', 3000);
-      }
-    });
+      pcmSourceNode.connect(pcmProcessorNode);
+      pcmProcessorNode.connect(pcmAudioCtx.destination);
+
+      isRecordingAudio = true;
+      setMicLiveState(true);
+    } catch (err) {
+      console.error('Open mic capture error:', err);
+      showToast('⚠️ Could not start open microphone.', 'danger', '🎙️', 3000);
+      stopAudioCapture();
+    }
   }
 
   function stopAudioCapture() {
-    if (!isRecordingAudio || !mediaRecorder) return;
-    try {
-      if (mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-      }
-    } catch (err) {}
+    if (!isRecordingAudio) return;
     isRecordingAudio = false;
+
+    if (pcmProcessorNode) {
+      try {
+        pcmProcessorNode.disconnect();
+        pcmProcessorNode.onaudioprocess = null;
+      } catch (e) {}
+      pcmProcessorNode = null;
+    }
+    if (pcmSourceNode) {
+      try {
+        pcmSourceNode.disconnect();
+      } catch (e) {}
+      pcmSourceNode = null;
+    }
+
     setMicLiveState(false);
   }
 
@@ -1181,26 +1225,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Client-Side Continuous Audio Playback ('audio-chunk')
-  socket.on('audio-chunk', async (data) => {
-    if (!data || data.senderId === socket.id) return;
+  // Client-Side Real-Time Open-Mic PCM Playback ('voice-pcm')
+  socket.on('voice-pcm', (data) => {
+    if (!data || data.senderId === socket.id || !data.pcm) return;
     showSpeakingIndicator(data.username || 'Player');
-    await playIncomingAudioChunk(data);
+    playIncomingPcm(data);
   });
 
   // Client-Side 2-Second Clue Burst Playback ('stt-audio-burst')
   socket.on('stt-audio-burst', async (data) => {
     if (!data || data.senderId === socket.id) return;
     showSpeakingIndicator(`${data.senderName || 'Describer'} (2s Clue)`);
-    await playAudioBurst(data.audio, data.mimeType);
+    await playAudioBurst(data.audio, data.mimeType, data.burstId);
   });
+
+  function playIncomingPcm(data) {
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const int16 = new Int16Array(data.pcm);
+      if (int16.length === 0) return;
+
+      const float32 = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) {
+        float32[i] = int16[i] / (int16[i] < 0 ? 0x8000 : 0x7FFF);
+      }
+
+      const sampleRate = data.sampleRate || 16000;
+      const audioBuffer = audioCtx.createBuffer(1, float32.length, sampleRate);
+      audioBuffer.copyToChannel(float32, 0);
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      let scheduledTime = senderPcmTimes.get(data.senderId) || now;
+
+      // Anti-jitter: If silence gap > 350ms or scheduled in the past, reset smoothly with 25ms buffer
+      if (scheduledTime < now || (scheduledTime - now) > 0.35) {
+        scheduledTime = now + 0.025;
+      }
+
+      source.start(scheduledTime);
+      senderPcmTimes.set(data.senderId, scheduledTime + audioBuffer.duration);
+    } catch (err) {
+      console.warn('PCM playback error:', err);
+    }
+  }
 
   let lastAudioBurstTime = 0;
 
-  async function playAudioBurst(audioData, mimeType) {
+  async function playAudioBurst(audioData, mimeType, burstId = null) {
     if (!audioData) return;
+    if (burstId && playedAudioBurstIds.has(burstId)) return;
+    if (burstId) {
+      playedAudioBurstIds.add(burstId);
+      if (playedAudioBurstIds.size > 100) {
+        const first = playedAudioBurstIds.values().next().value;
+        playedAudioBurstIds.delete(first);
+      }
+    }
+
     const now = Date.now();
-    if (now - lastAudioBurstTime < 600) return; // Prevent double-playing identical burst
+    if (now - lastAudioBurstTime < 500) return;
     lastAudioBurstTime = now;
 
     try {
@@ -1244,72 +1336,6 @@ document.addEventListener('DOMContentLoaded', () => {
     speakingTimeout = setTimeout(() => {
       speakingIndicator.style.display = 'none';
     }, 1200);
-  }
-
-  function combineArrayBuffers(bufA, bufB) {
-    const tmp = new Uint8Array(bufA.byteLength + bufB.byteLength);
-    tmp.set(new Uint8Array(bufA), 0);
-    tmp.set(new Uint8Array(bufB), bufA.byteLength);
-    return tmp.buffer;
-  }
-
-  async function playIncomingAudioChunk(data) {
-    try {
-      initAudio();
-      if (!audioCtx) return;
-      if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
-      }
-
-      let rawBuffer = (data.chunk instanceof ArrayBuffer)
-        ? data.chunk.slice(0)
-        : (data.chunk.buffer ? data.chunk.buffer.slice(0) : await new Blob([data.chunk]).arrayBuffer());
-
-      if (data.isFirst) {
-        senderHeaders.set(data.senderId, rawBuffer.slice(0));
-      }
-
-      const scheduleBuffer = (audioBuffer) => {
-        const source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioCtx.destination);
-
-        const now = audioCtx.currentTime;
-        const startTime = Math.max(now, nextAudioScheduleTime);
-        source.start(startTime);
-        nextAudioScheduleTime = startTime + audioBuffer.duration;
-      };
-
-      // Decode with Web Audio API
-      audioCtx.decodeAudioData(rawBuffer.slice(0), (audioBuffer) => {
-        scheduleBuffer(audioBuffer);
-      }, (err) => {
-        const header = senderHeaders.get(data.senderId);
-        if (header) {
-          const combined = combineArrayBuffers(header, rawBuffer);
-          audioCtx.decodeAudioData(combined, (audioBuffer) => {
-            scheduleBuffer(audioBuffer);
-          }, () => {
-            playViaAudioElement(rawBuffer, data.mimeType);
-          });
-        } else {
-          playViaAudioElement(rawBuffer, data.mimeType);
-        }
-      });
-    } catch (err) {
-      console.warn('Audio decode queue error:', err);
-    }
-  }
-
-  function playViaAudioElement(buffer, mimeType) {
-    try {
-      const blob = new Blob([buffer], { type: mimeType || 'audio/webm' });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.play().then(() => {
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-      }).catch(() => {});
-    } catch (e) {}
   }
 
   // =========================================================================
@@ -2176,9 +2202,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Auto-play the verified voice clue for the listener (e.g. Blind Drawer)
-      if (!isMe) {
-        showSpeakingIndicator(`${msg.sender || 'Describer'} (Voice Clue)`);
-        playAudioBurst(msg.audio, msg.mimeType);
+      if (!isMe && msg.isVoice && msg.audio) {
+        if (!playedAudioBurstIds.has(msg.id)) {
+          showSpeakingIndicator(`${msg.sender || 'Describer'} (Voice Clue)`);
+          playAudioBurst(msg.audio, msg.mimeType, msg.id);
+        }
       }
     }
 

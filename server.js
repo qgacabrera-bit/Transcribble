@@ -1265,7 +1265,28 @@ io.on('connection', (socket) => {
     broadcastNotification(room, `${oldName} changed name to "${cleanName}"`, 'info', '✏️', 2500);
   });
 
-  // 11. Real-Time Continuous Audio Streaming Relay
+  // 11. Real-Time Raw PCM Voice Streaming Relay (Free Draw & Open Mic)
+  socket.on('voice-pcm', (data) => {
+    const room = getSocketRoom(socket.id);
+    if (!room || !data || !data.pcm) return;
+
+    const isAllowedOpenMic = (room.gameState.phase === PHASES.LOBBY || socket.id === room.gameState.drawerId);
+    if (!isAllowedOpenMic) return;
+
+    const user = room.connectedUsers.get(socket.id);
+    if (!user) return;
+
+    socket.to(room.id).emit('voice-pcm', {
+      pcm: data.pcm,
+      sampleRate: data.sampleRate || 16000,
+      senderId: socket.id,
+      username: user.username,
+      color: user.color,
+      isDrawer: (socket.id === room.gameState.drawerId)
+    });
+  });
+
+  // 11.1 Backward Compatible Audio Chunk Relay
   socket.on('audio-chunk', (data) => {
     const room = getSocketRoom(socket.id);
     if (!room || !data || !data.chunk) return;
@@ -1346,8 +1367,10 @@ io.on('connection', (socket) => {
         }
 
         // Clean Voice Clue! Accept BOTH voice and text
+        const sharedBurstId = 'voice_clue_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+
         io.to(room.id).emit('chat-message', {
-          id: 'voice_clue_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          id: sharedBurstId,
           sender: user.username,
           color: user.color,
           text: transcriptText,
@@ -1361,6 +1384,7 @@ io.on('connection', (socket) => {
         });
 
         socket.to(room.id).emit('stt-audio-burst', {
+          burstId: sharedBurstId,
           audio: data.audio,
           durationMs: data.durationMs || 2000,
           mimeType: data.mimeType || 'audio/webm',
@@ -1375,8 +1399,10 @@ io.on('connection', (socket) => {
       }
 
       // Lobby voice broadcast
+      const sharedLobbyBurstId = 'voice_msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
       io.to(room.id).emit('chat-message', {
-        id: 'voice_msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        id: sharedLobbyBurstId,
         sender: user.username,
         color: user.color,
         text: transcriptText,
@@ -1390,6 +1416,7 @@ io.on('connection', (socket) => {
       });
 
       socket.to(room.id).emit('stt-audio-burst', {
+        burstId: sharedLobbyBurstId,
         audio: data.audio,
         durationMs: data.durationMs || 2000,
         mimeType: data.mimeType || 'audio/webm',
