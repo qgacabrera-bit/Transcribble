@@ -8,6 +8,7 @@ const { DeepgramClient, createClient } = require('@deepgram/sdk');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
+  maxHttpBufferSize: 1e7, // 10MB to accommodate audio bursts comfortably
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
@@ -77,7 +78,13 @@ function extractHighestConfidenceTranscript(msg) {
     }
   }
 
-  const alts = data?.channel?.alternatives || data?.alternatives;
+  // Deepgram REST returns data.results.channels[0].alternatives
+  // Deepgram Live WS returns data.channel.alternatives
+  const alts =
+    data?.results?.channels?.[0]?.alternatives ||
+    data?.channel?.alternatives ||
+    data?.alternatives;
+
   if (!Array.isArray(alts) || alts.length === 0) {
     return { text: '', confidence: 0 };
   }
@@ -99,140 +106,61 @@ function extractHighestConfidenceTranscript(msg) {
     highestConf = alts[0].confidence || 0;
   }
 
+  if (!bestText && alts[0]?.paragraphs?.transcript) {
+    bestText = alts[0].paragraphs.transcript.trim();
+  }
+
   return { text: bestText, confidence: Math.max(0, highestConf) };
 }
 
 /**
- * Transcribes a 2-second audio burst using Deepgram Live WebSocket with pre-recorded file fallback
+ * Transcribes an audio burst (voice clue) via Deepgram's Nova-2 REST API.
+ * Uses native fetch with connection reuse, auto-format detection, and a 6-second timeout.
  */
 async function transcribeAudioBurstViaDeepgram(audioBuffer, mimeType = 'audio/webm') {
-  const client = getDeepgramClient();
-  if (!client || !audioBuffer || audioBuffer.length < 200) {
+  const apiKey = process.env.DEEPGRAM_API_KEY;
+  if (!apiKey || apiKey === 'your_deepgram_api_key_here' || !audioBuffer || audioBuffer.length < 200) {
     return { transcript: '', confidence: 0 };
   }
 
-  // 1. Try Live WebSocket Connection
+  const model = process.env.DEEPGRAM_MODEL || 'nova-2';
+  const url = `https://api.deepgram.com/v1/listen?model=${encodeURIComponent(model)}&smart_format=true&punctuate=true`;
+  const cleanMime = mimeType ? mimeType.trim() : 'audio/webm';
+
   try {
-    const livePromise = new Promise((resolve) => {
-      let isResolved = false;
-      let liveSocket = null;
-      let timeoutId = null;
-      let bestTranscript = '';
-      let highestConfidence = 0;
-      const finalTranscripts = [];
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-      const finish = (text, conf) => {
-        if (isResolved) return;
-        isResolved = true;
-        if (timeoutId) clearTimeout(timeoutId);
-        try {
-          if (liveSocket && typeof liveSocket.finish === 'function') {
-            liveSocket.finish();
-          }
-        } catch (e) {}
-        resolve({ transcript: text || '', confidence: conf || 0 });
-      };
-
-      timeoutId = setTimeout(() => {
-        const combined = finalTranscripts.filter(Boolean).join(' ').trim() || bestTranscript.trim();
-        finish(combined, highestConfidence);
-      }, 2500);
-
-      const liveOptions = {
-        model: process.env.DEEPGRAM_MODEL || 'nova-2',
-        smart_format: 'true',
-        punctuate: 'true',
-        interim_results: 'false',
-        language: 'en',
-        shouldReconnect: () => false,
-        reconnectAttempts: 0,
-        connectionTimeoutInSeconds: 3
-      };
-
-      if (!client.listen?.v1 || typeof client.listen.v1.connect !== 'function') {
-        return finish('', 0);
-      }
-
-      client.listen.v1.connect(liveOptions).then((ws) => {
-        liveSocket = ws;
-
-        liveSocket.on('message', (data) => {
-          let payload = data;
-          if (typeof data === 'string') {
-            try { payload = JSON.parse(data); } catch (e) {}
-          }
-
-          const extracted = extractHighestConfidenceTranscript(payload);
-          if (extracted.text) {
-            if (extracted.confidence >= highestConfidence) {
-              highestConfidence = extracted.confidence;
-              bestTranscript = extracted.text;
-            }
-            if (payload?.is_final) {
-              finalTranscripts.push(extracted.text);
-            }
-          }
-
-          if ((payload?.is_final && extracted.text) || payload?.type === 'Metadata') {
-            const combined = finalTranscripts.filter(Boolean).join(' ').trim() || bestTranscript.trim();
-            if (combined) {
-              finish(combined, highestConfidence);
-            }
-          }
-        });
-
-        liveSocket.on('error', () => {
-          const combined = finalTranscripts.filter(Boolean).join(' ').trim() || bestTranscript.trim();
-          finish(combined, highestConfidence);
-        });
-
-        liveSocket.on('close', () => {
-          const combined = finalTranscripts.filter(Boolean).join(' ').trim() || bestTranscript.trim();
-          finish(combined, highestConfidence);
-        });
-
-        liveSocket.connect();
-        liveSocket.waitForOpen().then(() => {
-          liveSocket.sendMedia(audioBuffer);
-          liveSocket.sendFinalize({ type: 'Finalize' });
-        }).catch(() => {
-          finish('', 0);
-        });
-
-      }).catch(() => {
-        finish('', 0);
-      });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${apiKey}`,
+        'Content-Type': cleanMime
+      },
+      body: audioBuffer,
+      signal: controller.signal
     });
 
-    const result = await livePromise;
-    if (result && result.transcript) {
-      return result;
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.warn(`[Deepgram REST] HTTP ${response.status} ${response.statusText}:`, errText);
+      return { transcript: '', confidence: 0 };
     }
+
+    const data = await response.json();
+    const extracted = extractHighestConfidenceTranscript(data);
+    return {
+      transcript: extracted.text || '',
+      confidence: extracted.confidence || 0
+    };
   } catch (err) {
-    console.warn('[Deepgram Live WS] WS attempt error, falling back to pre-recorded:', err.message);
+    console.error('[Deepgram REST] Transcription error:', err.message || err);
+    return { transcript: '', confidence: 0 };
   }
-
-  // 2. Pre-recorded HTTP Fallback
-  try {
-    if (client.listen?.prerecorded?.transcribeFile) {
-      const response = await client.listen.prerecorded.transcribeFile(
-        audioBuffer,
-        {
-          model: process.env.DEEPGRAM_MODEL || 'nova-2',
-          smart_format: true,
-          punctuate: true,
-          mimetype: mimeType
-        }
-      );
-      const data = response?.result || response;
-      return extractHighestConfidenceTranscript(data);
-    }
-  } catch (fallbackErr) {
-    console.error('[Deepgram Fallback] Pre-recorded API error:', fallbackErr.message);
-  }
-
-  return { transcript: '', confidence: 0 };
 }
+
 
 // ============================================================================
 // Reverse Pictionary + Taboo Cards & Game Constants
@@ -1320,16 +1248,15 @@ io.on('connection', (socket) => {
       return;
     }
 
-    console.log(`[Audio Burst] Room ${room.id}: 2s voice clue from Describer ${user.username} (${data.durationMs || 0}ms). Transcribing...`);
-
     const rawAudioBuffer = Buffer.isBuffer(data.audio) ? data.audio : Buffer.from(data.audio);
+    console.log(`[Audio Burst] Room ${room.id}: Voice clue from Describer ${user.username} (${data.durationMs || 0}ms, ${rawAudioBuffer.length} bytes). Transcribing...`);
 
     try {
       const sttResult = await transcribeAudioBurstViaDeepgram(rawAudioBuffer, data.mimeType || 'audio/webm');
 
       if (!sttResult || !sttResult.transcript || !sttResult.transcript.trim()) {
-        console.log(`[Deepgram STT] No transcript detected for ${user.username}'s voice burst.`);
-        sendPrivateNotification(socket, '⚠️ No audible speech detected in your 2s burst. Hold to speak and speak clearly!', 'warning', '🎙️', 3500);
+        console.log(`[Deepgram STT] No transcript detected for ${user.username}'s voice burst (${rawAudioBuffer.length} bytes).`);
+        sendPrivateNotification(socket, '⚠️ No audible speech detected. Hold the button while speaking clearly!', 'warning', '🎙️', 3500);
         return;
       }
 

@@ -1019,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // 3.2. Describer Strict 2-Second "Hold to Speak" Burst Mode ('stt-audio-burst')
+  // 3.2. Describer "Hold to Speak" Burst Mode ('stt-audio-burst')
   // =========================================================================
   let burstRecorder = null;
   let isBurstRecording = false;
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let burstInterval = null;
   let burstStartTime = 0;
   let burstChunks = [];
-  const MAX_BURST_MS = 2000; // Strict 2-second maximum limit
+  const MAX_BURST_MS = 3500; // 3.5-second limit for clear clue formulation
 
   async function startDescriberBurst() {
     if (isBurstRecording) return;
@@ -1057,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       burstRecorder.onstop = async () => {
         const actualDuration = Date.now() - burstStartTime;
-        if (actualDuration < 300) {
+        if (actualDuration < 400) {
           showToast('⚠️ Too quick! Hold the button while speaking your clue.', 'warning', '🎙️', 2500);
           resetBurstUi();
           return;
@@ -1075,21 +1075,23 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           showToast(`🎙️ Voice clue sent! (${(actualDuration / 1000).toFixed(1)}s)`, 'success', '🚀', 2200);
+        } else {
+          showToast('⚠️ No audio captured. Check your microphone permissions.', 'warning', '🎙️', 3000);
         }
         resetBurstUi();
       };
 
-      burstRecorder.start();
+      burstRecorder.start(200); // Continuous 200ms timeslices ensure buffer integrity
       burstStartTime = Date.now();
       isBurstRecording = true;
       setBurstUiActive(true);
 
-      // Strict 2-second maximum recording limit
+      // Maximum recording limit
       burstTimeout = setTimeout(() => {
         stopDescriberBurst();
       }, MAX_BURST_MS);
 
-      // Smooth visual countdown (2.0s -> 0.0s)
+      // Smooth visual countdown (3.5s -> 0.0s)
       burstInterval = setInterval(() => {
         const elapsed = Date.now() - burstStartTime;
         const remaining = Math.max(0, (MAX_BURST_MS - elapsed) / 1000);
@@ -1110,6 +1112,11 @@ document.addEventListener('DOMContentLoaded', () => {
     clearInterval(burstInterval);
 
     if (burstRecorder && burstRecorder.state !== 'inactive') {
+      try {
+        if (typeof burstRecorder.requestData === 'function') {
+          burstRecorder.requestData();
+        }
+      } catch (e) {}
       try {
         burstRecorder.stop();
       } catch (e) {}
@@ -1135,8 +1142,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resetBurstUi() {
     setBurstUiActive(false);
-    if (burstCountdownPill) burstCountdownPill.textContent = '2.0s';
-    if (pttCountdownBadge) pttCountdownBadge.textContent = '2.0s';
+    if (burstCountdownPill) burstCountdownPill.textContent = '3.5s';
+    if (pttCountdownBadge) pttCountdownBadge.textContent = '3.5s';
   }
 
   // Describer Burst Button Event Handlers
@@ -1232,10 +1239,10 @@ document.addEventListener('DOMContentLoaded', () => {
     playIncomingPcm(data);
   });
 
-  // Client-Side 2-Second Clue Burst Playback ('stt-audio-burst')
+  // Client-Side Voice Clue Burst Playback ('stt-audio-burst')
   socket.on('stt-audio-burst', async (data) => {
     if (!data || data.senderId === socket.id) return;
-    showSpeakingIndicator(`${data.senderName || 'Describer'} (2s Clue)`);
+    showSpeakingIndicator(`${data.senderName || 'Describer'} (Voice Clue)`);
     await playAudioBurst(data.audio, data.mimeType, data.burstId);
   });
 
@@ -1757,13 +1764,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      drawerStatusChip.textContent = `👀 ${state.drawerUsername || 'Drawer'} is sketching. Give 2s voice clues!`;
+      drawerStatusChip.textContent = `👀 ${state.drawerUsername || 'Drawer'} is sketching. Give voice clues!`;
       drawerStatusChip.className = 'drawer-status-chip';
 
       wordLabel.textContent = 'Secret Target:';
       currentWordEl.textContent = (state.targetWord || '***').toUpperCase();
 
-      // Describers lose open mic access! Replaced by 2-second "Hold to Speak" button
+      // Describers lose open mic access! Replaced by "Hold to Speak" voice clue button
       if (isRecordingAudio) {
         stopAudioCapture();
       }
@@ -1771,7 +1778,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (describerBurstBtn) describerBurstBtn.style.display = 'inline-flex';
 
       chatInput.placeholder = 'Type a creative clue (Do NOT use banned words!)...';
-      roleHelpText.textContent = `💡 DESCRIBER: Hold to speak a 2s clue or type without saying forbidden words!`;
+      roleHelpText.textContent = `💡 DESCRIBER: Hold to speak a clue or type without saying forbidden words!`;
     }
   }
 
@@ -2132,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const audioBlob = new Blob([msg.audio], { type: msg.mimeType || 'audio/webm' });
         currentBlobUrl = URL.createObjectURL(audioBlob);
-        const durationSec = msg.durationMs ? (msg.durationMs / 1000).toFixed(1) + 's' : '2.0s';
+        const durationSec = msg.durationMs ? (msg.durationMs / 1000).toFixed(1) + 's' : '3.5s';
         audioPlayerHTML = `
           <div class="voice-bubble-player">
             <button class="btn-voice-play" type="button" title="Listen to voice clue">

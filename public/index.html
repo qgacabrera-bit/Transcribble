@@ -213,7 +213,7 @@
                       <div class="role-badge describer-badge">🚫 Describers</div>
                       <ul class="role-points">
                         <li>You <strong>see</strong> the secret target word.</li>
-                        <li>Hold Spacebar or button for <strong>2-second voice clues</strong>.</li>
+                        <li>Hold Spacebar or button for <strong>voice clues (up to 3.5s)</strong>.</li>
                         <li><strong>NEVER</strong> say or type the banned trap words!</li>
                         <li>Guide the drawer using geometry &amp; position hints.</li>
                       </ul>
@@ -322,12 +322,12 @@
           <span class="mic-label" id="micLabel">Mic: Off</span>
         </button>
 
-        <!-- Describer 2-Second Hold to Speak Burst Button (Replaces Open Mic in Describer Mode) -->
+        <!-- Describer Hold to Speak Voice Clue Button (Replaces Open Mic in Describer Mode) -->
         <button class="btn-burst-hold" id="describerBurstBtn" style="display: none;"
-          title="Hold to Speak a 2-second voice clue (or Hold Spacebar)">
+          title="Hold to Speak a voice clue (or Hold Spacebar)">
           <span class="burst-icon">🎙️</span>
-          <span class="burst-label" id="burstLabel">Hold to Speak (2s)</span>
-          <span class="burst-countdown-pill" id="burstCountdownPill">2.0s</span>
+          <span class="burst-label" id="burstLabel">Hold to Speak</span>
+          <span class="burst-countdown-pill" id="burstCountdownPill">3.5s</span>
         </button>
 
         <div class="speaking-indicator" id="speakingIndicator" style="display: none;">
@@ -361,12 +361,12 @@
               <span class="taboo-target-word" id="tabooTargetWord">APPLE</span>
               <span class="taboo-category-badge" id="tabooCategoryBadge">Food</span>
             </div>
-            <!-- Push to Talk 2-second burst button for Describers -->
+            <!-- Push to Talk voice clue burst button for Describers -->
             <button class="btn-ptt btn-describer-burst" id="pttBtn"
-              title="Hold to Speak a 2-second clue (or Hold Spacebar)">
+              title="Hold to Speak a voice clue (or Hold Spacebar)">
               <span class="ptt-icon">🎙️</span>
-              <span class="ptt-text" id="pttText">Hold to Speak (Max 2s)</span>
-              <span class="ptt-countdown-badge" id="pttCountdownBadge">2.0s</span>
+              <span class="ptt-text" id="pttText">Hold to Speak (Max 3.5s)</span>
+              <span class="ptt-countdown-badge" id="pttCountdownBadge">3.5s</span>
             </button>
           </div>
           <div class="taboo-banned-section">
