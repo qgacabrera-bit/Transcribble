@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Transcribble | Reverse Drawing &amp; Voice Party Game</title>
+  <meta name="description"
+    content="We flipped classic drawing party games upside down! In this blind-sketch challenge, the artist has no idea what they are drawing. The rest of the lobby must describe the secret word using their microphones, but beware: our voice recognition is listening for forbidden trap words. Guide the blind artist, avoid the traps, and try not to shout over each other!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@500;600;700;800&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- Floating Disappearing Notification Toasts -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Centered Landing Page / Home Screen Overlay -->
+  <div class="landing-overlay" id="landingOverlay">
+    <!-- Client-Side Background Doodle Scratchpad (Zero Server Cost) -->
+    <canvas id="bgDoodleCanvas" class="bg-doodle-canvas"></canvas>
+
+    <!-- Floating Doodle Scratchpad Tooltip & Clear Action -->
+    <div class="bg-doodle-hint" id="bgDoodleHint">
+      <span class="doodle-hint-pencil">✏️</span>
+      <span>Doodle on the paper while waiting!</span>
+      <button type="button" class="btn-clear-bg-doodle" id="btnClearBgDoodle"
+        title="Clear background doodles">Clear</button>
+    </div>
+
+    <!-- Centered Side-by-Side Flexbox / Grid Wrapper -->
+    <!-- Centered Main Landing Layout -->
+    <div class="landing-main-layout">
+      <!-- Top Centered Brand Header -->
+      <header class="landing-top-brand">
+        <img src="assets/transcribble-logo.png" alt="Transcribble" class="landing-top-logo">
+        <h1 class="sr-only">Transcribble</h1>
+      </header>
+
+      <!-- Side-by-Side Flexbox / Grid Wrapper -->
+      <div class="landing-content-wrap">
+        <!-- Left Column: Login Card & Game Modes -->
+        <div class="landing-card">
+          <!-- Alert Box for Error / Status Messaging -->
+          <div class="landing-alert" id="landingAlert" style="display: none;"></div>
+
+          <!-- Required Username Input -->
+          <div class="landing-form-group">
+            <label for="landingUsername" class="landing-label">
+              Artist Nickname <span class="required-star">*</span>
+            </label>
+            <div class="landing-input-wrap">
+              <span class="landing-input-icon">✏️</span>
+              <input type="text" id="landingUsername" class="landing-input" placeholder="e.g. DoodleChamp"
+                maxlength="20" required autocomplete="nickname" />
+            </div>
+          </div>
+
+          <!-- Primary Action: Join Random Match -->
+          <div class="landing-actions">
+            <button type="button" class="btn-landing-random" id="btnJoinRandom">
+              <span class="landing-btn-icon">⚡</span>
+              <span class="landing-btn-text">Join Random Match</span>
+            </button>
+
+            <div class="landing-divider">
+              <span>OR PLAY WITH FRIENDS</span>
+            </div>
+
+            <!-- Custom Action 1: Create Custom Game -->
+            <button type="button" class="btn-landing-create" id="btnCreateCustom">
+              <span class="landing-btn-icon">➕</span>
+              <span class="landing-btn-text">Create Custom Game</span>
+            </button>
+
+            <!-- Custom Action 2: Join via 5-letter Room Code -->
+            <div class="landing-join-box">
+              <label for="landingRoomCode" class="landing-sublabel">Enter 5-Letter Room Code:</label>
+              <div class="landing-join-row">
+                <input type="text" id="landingRoomCode" class="landing-code-input" placeholder="ABC12" maxlength="5"
+                  autocomplete="off" autocapitalize="characters" />
+                <button type="button" class="btn-landing-join" id="btnJoinCustom">
+                  <span>Join</span>
+                  <span class="join-arrow">→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Game Modes Selection (Bottom Section) -->
+          <div class="landing-modes-section">
+            <div class="modes-header-row">
+              <span class="modes-label">GAME MODES</span>
+            </div>
+            <div class="modes-button-row">
+              <!-- Mode 1: Classic (Active) -->
+              <button type="button" class="mode-btn mode-btn-active" id="modeBtnClassic"
+                title="Classic Mode: Blind Drawer + Taboo Describers">
+                <span class="mode-btn-icon">🎨</span>
+                <span class="mode-btn-title">Classic</span>
+                <span class="mode-tag mode-tag-active">Active</span>
+              </button>
+
+              <!-- Mode 2: Speed Blitz (Locked) -->
+              <div class="mode-btn mode-btn-locked" title="Speed Blitz - Fast-paced rapid rounds! (Coming Soon)">
+                <div class="mode-lock-overlay">🔒</div>
+                <span class="mode-btn-icon">⚡</span>
+                <span class="mode-btn-title">Blitz</span>
+                <span class="mode-tag mode-tag-soon">Soon</span>
+              </div>
+
+              <!-- Mode 3: Imposter (Locked) -->
+              <div class="mode-btn mode-btn-locked"
+                title="Imposter Mode - Everyone knows the secret word except one! (Coming Soon)">
+                <div class="mode-lock-overlay">🔒</div>
+                <span class="mode-btn-icon">🕵️</span>
+                <span class="mode-btn-title">Imposter</span>
+                <span class="mode-tag mode-tag-soon">Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Information Container (Carousel) -->
+        <div class="landing-info-card" id="landingInfoCard">
+          <!-- Card Top Header -->
+          <div class="info-card-header">
+            <span class="info-header-title">📖 Game Guide &amp; Updates</span>
+            <span class="info-slide-indicator" id="infoSlideIndicator">Slide 1 of 3</span>
+          </div>
+
+          <!-- Carousel Viewport -->
+          <div class="info-carousel-viewport">
+            <div class="info-carousel-track" id="infoCarouselTrack">
+
+              <!-- Slide 1: About -->
+              <div class="info-slide" data-slide="0">
+                <div class="slide-inner slide-about">
+                  <div class="slide-icon-heading">
+                    <span class="slide-emoji">🎨</span>
+                    <h3 class="slide-title">About Transcribble</h3>
+                  </div>
+
+                  <div class="about-description-box">
+                    <p class="about-desc-paragraph">
+                      We flipped classic drawing games upside down. In this <strong>blind-sketch
+                        challenge</strong>, the artist has no idea what they are drawing.
+                    </p>
+                    <p class="about-desc-paragraph">
+                      The rest of the lobby must describe the secret word using their microphones, but beware:
+                      <strong>our voice recognition is listening for forbidden words</strong>.
+                    </p>
+                    <div class="about-desc-callout">
+                      <span class="callout-icon">🎯</span>
+                      <span>Guide the blind artist, avoid the traps, and try not to shout over each other!</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Slide 2: Patch Notes (Yellow Post-It Note Aesthetic) -->
+              <div class="info-slide" data-slide="1">
+                <div class="slide-inner slide-patch">
+                  <div class="post-it-note">
+                    <div class="post-it-tape"></div>
+                    <div class="post-it-pin">📌</div>
+                    <h3 class="post-it-title">Patch Notes &amp; Updates</h3>
+                    <div class="post-it-content">
+                      <ul class="post-it-list">
+                        <li><strong>Multi-Room Matchmaking:</strong> Jump into public lobbies or create private 5-letter
+                          rooms for game night!</li>
+                        <li><strong>Interactive Desk Scratchpad:</strong> Doodle on the paper background while waiting,
+                          complete with paper peel-away wipe!</li>
+                        <li><strong>2-Second Voice Burst Engine:</strong> Quick push-to-speak audio clips with live
+                          voice wave indicators.</li>
+                        <li><strong>Trap Word Radar:</strong> Real-time clue speech and text censorship with buzzer
+                          alerts.</li>
+                        <li><strong>Neo-Brutalist Layout:</strong> Side-by-side cards with comic book borders and smooth
+                          carousel guide!</li>
+                      </ul>
+                      <div class="post-it-signature">— Dev Scribbles &bull; v2.1 ✏️</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Slide 3: How to Play -->
+              <div class="info-slide" data-slide="2">
+                <div class="slide-inner slide-how">
+                  <div class="slide-icon-heading">
+                    <span class="slide-emoji">🎮</span>
+                    <h3 class="slide-title">How to Play</h3>
+                  </div>
+
+                  <div class="rules-grid">
+                    <!-- Drawer Column -->
+                    <div class="rule-role-box drawer-role">
+                      <div class="role-badge drawer-badge">🎨 Blind Drawer</div>
+                      <ul class="role-points">
+                        <li>You <strong>cannot see</strong> the secret prompt.</li>
+                        <li>Listen to incoming voice clues &amp; read chat.</li>
+                        <li>Draw what the room describes onto the canvas.</li>
+                        <li>Type guesses in chat to solve the mystery word!</li>
+                      </ul>
+                    </div>
+
+                    <!-- Describer Column -->
+                    <div class="rule-role-box describer-role">
+                      <div class="role-badge describer-badge">🚫 Describers</div>
+                      <ul class="role-points">
+                        <li>You <strong>see</strong> the secret target word.</li>
+                        <li>Hold Spacebar or button for <strong>2-second voice clues</strong>.</li>
+                        <li><strong>NEVER</strong> say or type the banned trap words!</li>
+                        <li>Guide the drawer using geometry &amp; position hints.</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="pro-tip-pill">
+                    💡 <strong>Pro Tip:</strong> Describe simple shapes (e.g. "draw an oval in the center") rather than
+                    the object!
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Carousel Navigation & Dot Controls -->
+          <div class="info-carousel-footer">
+            <button type="button" class="carousel-nav-btn prev" id="carouselPrevBtn"
+              aria-label="Previous Slide">‹</button>
+            <div class="carousel-dots" id="carouselDots" role="tablist" aria-label="Information Slides">
+              <button type="button" class="carousel-dot active" data-slide-index="0" role="tab" aria-selected="true"
+                aria-label="Slide 1: About"></button>
+              <button type="button" class="carousel-dot" data-slide-index="1" role="tab" aria-selected="false"
+                aria-label="Slide 2: Patch Notes"></button>
+              <button type="button" class="carousel-dot" data-slide-index="2" role="tab" aria-selected="false"
+                aria-label="Slide 3: How to Play"></button>
+            </div>
+            <button type="button" class="carousel-nav-btn next" id="carouselNextBtn" aria-label="Next Slide">›</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy & Audio Notice Banner -->
+      <div class="landing-privacy-banner" id="landingPrivacyBanner">
+        <div class="privacy-banner-left">
+          <div class="privacy-shield-col">
+            <span class="privacy-shield-icon">🛡️</span>
+          </div>
+          <div class="privacy-text-group">
+            <span class="privacy-notice-title">PRIVACY &amp; AUDIO NOTICE</span>
+            <p class="privacy-note-text">
+              Transcribble processes voice audio in real-time solely for in-game speech recognition. Microphone streams
+              are ephemeral, processed in memory, and <strong>never recorded or stored to disk</strong>. Intended for
+              players aged 13+.
+            </p>
+          </div>
+        </div>
+        <button type="button" class="btn-privacy-details" id="btnPrivacyModalToggle"
+          title="View Privacy &amp; Data Notice">
+          <span>Details</span>
+          <span class="privacy-btn-arrow">ℹ️</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container" id="appContainer">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <img src="assets/transcribble-logo.png" alt="Transcribble" class="brand-logo-img" id="brandLogo"
+          title="Transcribble - Click to return Home">
+        <!-- Prominent Room ID Badge with Copy Button -->
+        <div class="header-room-pill" id="headerRoomPill">
+          <span class="room-pill-label">ROOM:</span>
+          <span class="room-pill-code" id="currentRoomCode">-----</span>
+          <button class="btn-copy-code" id="btnCopyRoomCode" type="button" title="Copy Room ID to invite friends">
+            <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span class="copy-label" id="copyBtnLabel">Copy ID</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Party Game Word / Banner Info -->
+      <div class="game-banner" id="gameBanner">
+        <div class="round-pill" id="roundPill">LOBBY</div>
+
+        <!-- Live Countdown Timer -->
+        <div class="game-timer-pill" id="gameTimerPill" style="display: none;">
+          <svg class="timer-ring-svg" width="22" height="22" viewBox="0 0 36 36">
+            <path class="timer-ring-bg"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path class="timer-ring-progress" id="timerProgress" stroke-dasharray="100, 100"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <span class="timer-digits" id="timerDigits">80s</span>
+        </div>
+
+        <div class="banner-word-display" id="wordDisplay">
+          <span class="word-label" id="wordLabel">Prompt:</span>
+          <span class="secret-word" id="currentWord">🎨 Free Draw &amp; Taboo Mode</span>
+        </div>
+
+        <button class="btn-primary-action" id="startGameBtn">▶ Start Game</button>
+      </div>
+
+      <!-- User Profile, Sound, Mic & Connection Status -->
+      <div class="header-status">
+        <button class="btn-mic-toggle" id="micToggleBtn" title="Click to Toggle Microphone or Hold Space to Speak">
+          <span class="mic-icon">🎙️</span>
+          <span class="mic-label" id="micLabel">Mic: Off</span>
+        </button>
+
+        <!-- Describer 2-Second Hold to Speak Burst Button (Replaces Open Mic in Describer Mode) -->
+        <button class="btn-burst-hold" id="describerBurstBtn" style="display: none;"
+          title="Hold to Speak a 2-second voice clue (or Hold Spacebar)">
+          <span class="burst-icon">🎙️</span>
+          <span class="burst-label" id="burstLabel">Hold to Speak (2s)</span>
+          <span class="burst-countdown-pill" id="burstCountdownPill">2.0s</span>
+        </button>
+
+        <div class="speaking-indicator" id="speakingIndicator" style="display: none;">
+          <span class="speaking-dot"></span>
+          <span class="speaking-text" id="speakingText">Speaking...</span>
+          <div class="audio-waves">
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+          </div>
+        </div>
+
+        <button class="btn-sound-toggle" id="soundToggleBtn" title="Toggle Sound Effects">🔊</button>
+
+        <button class="btn-home-nav" id="btnHomeNav" type="button" title="Leave room and return to Home Screen">
+          <span class="home-icon">🏠</span>
+          <span class="home-text">Home</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="main-content">
+      <!-- Left Column: Canvas & Taboo Clue Board -->
+      <section class="canvas-section" id="canvasSection">
+        <!-- Taboo Card Banner for Describers (Hidden from Drawer) -->
+        <div class="taboo-guide-card" id="tabooGuideCard" style="display: none;">
+          <div class="taboo-card-top-row">
+            <div class="taboo-target-section">
+              <span class="taboo-label">SECRET TARGET WORD:</span>
+              <span class="taboo-target-word" id="tabooTargetWord">APPLE</span>
+              <span class="taboo-category-badge" id="tabooCategoryBadge">Food</span>
+            </div>
+            <!-- Push to Talk 2-second burst button for Describers -->
+            <button class="btn-ptt btn-describer-burst" id="pttBtn"
+              title="Hold to Speak a 2-second clue (or Hold Spacebar)">
+              <span class="ptt-icon">🎙️</span>
+              <span class="ptt-text" id="pttText">Hold to Speak (Max 2s)</span>
+              <span class="ptt-countdown-badge" id="pttCountdownBadge">2.0s</span>
+            </button>
+          </div>
+          <div class="taboo-banned-section">
+            <span class="taboo-banned-label">🚫 FORBIDDEN WORDS (Do NOT say in voice or chat!):</span>
+            <div class="taboo-banned-chips" id="tabooBannedChips">
+              <!-- Dynamically populated with banned word chips -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Blind Drawer Guidance Banner (Shown only to Drawer) -->
+        <div class="drawer-guide-card" id="drawerGuideCard" style="display: none;">
+          <div class="drawer-guide-left">
+            <span class="drawer-role-badge">🎨 YOU ARE THE BLIND DRAWER &amp; GUESSER!</span>
+            <span class="drawer-mystery-text" id="drawerMysteryText">Mystery Word: _ _ _ _ _ (5 letters)</span>
+          </div>
+          <div class="drawer-guide-right">
+            <span>Read clues in chat &bull; Sketch the object &bull; Type your guesses!</span>
+          </div>
+        </div>
+
+        <!-- Canvas Status & Meta Bar -->
+        <div class="canvas-top-bar">
+          <div class="active-tool-display">
+            <span class="tool-preview-pill" id="toolPreviewPill">
+              <span class="tool-preview-dot" id="toolPreviewDot"></span>
+              <span id="toolPreviewText">Brush</span>
+            </span>
+            <span class="drawer-status-chip" id="drawerStatusChip" style="display: none;"></span>
+          </div>
+
+          <div class="canvas-meta-actions">
+            <button class="btn-action-sm" id="downloadCanvasBtn" title="Download your drawing">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Save</span>
+            </button>
+            <button class="btn-action-sm danger" id="clearCanvasBtn" title="Wipe canvas for all players">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              <span>Clear Board</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- The Canvas Stage Container -->
+        <div class="canvas-stage-wrapper" id="canvasContainer">
+          <canvas id="drawingCanvas" width="1200" height="800"></canvas>
+          <div class="canvas-cursor" id="canvasCursor"></div>
+          <div class="canvas-wipe-overlay" id="wipeOverlay"></div>
+
+          <!-- Screen Flash Overlay for Taboo Penalties -->
+          <div class="taboo-flash-overlay" id="tabooFlashOverlay"></div>
+
+          <!-- Guesser/Describer Read-Only Canvas Overlay -->
+          <div class="guesser-lock-overlay" id="guesserLockOverlay">
+            <div class="lock-card">
+              <div class="lock-icon">👀</div>
+              <h3 class="lock-title" id="lockTitle">Drawer is sketching...</h3>
+              <p class="lock-subtext">Type clues in chat to guide them!</p>
+            </div>
+          </div>
+
+          <!-- Round End Intermission Overlay -->
+          <div class="round-end-overlay" id="roundEndOverlay">
+            <div class="round-end-modal">
+              <span class="round-end-badge" id="roundEndBadge">ROUND COMPLETE</span>
+              <h2 class="round-end-word" id="roundEndWord">APPLE</h2>
+              <p class="round-end-subtext" id="roundEndSubtext">Next round starting soon...</p>
+            </div>
+          </div>
+
+          <!-- Game Over Podium Overlay -->
+          <div class="game-over-overlay" id="gameOverOverlay">
+            <div class="game-over-modal">
+              <div class="trophy-icon">🏆</div>
+              <h2 class="game-over-title">Game Over!</h2>
+              <div class="podium-container" id="podiumContainer"></div>
+              <button class="btn-play-again" id="playAgainBtn">Play Again</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Traditional Coloring Materials (Toolbar) -->
+        <div class="art-toolbar" id="artToolbar">
+          <!-- Tool Mode Selector (Brush vs Eraser) -->
+          <div class="tool-group tool-types">
+            <button class="tool-btn active" id="brushToolBtn" data-tool="brush" title="Drawing Brush">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.375 2.625a3.875 3.875 0 0 0-5.48 0L3.5 12v4.5H8l9.395-9.395a3.875 3.875 0 0 0 0-5.48z">
+                </path>
+                <line x1="13.5" y1="6.5" x2="17.5" y2="10.5"></line>
+              </svg>
+              <span>Brush</span>
+            </button>
+            <button class="tool-btn" id="eraserToolBtn" data-tool="eraser" title="Eraser Tool">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path>
+                <path d="M22 21H7"></path>
+                <path d="m5 11 9 9"></path>
+              </svg>
+              <span>Eraser</span>
+            </button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Brush Size Selector -->
+          <div class="tool-group tool-sizes">
+            <span class="group-label">Nib</span>
+            <div class="size-buttons">
+              <button class="size-btn" data-size="3" title="Fine Pen (3px)">
+                <span class="size-indicator-dot dot-thin"></span>
+                <span class="size-label">Fine</span>
+              </button>
+              <button class="size-btn active" data-size="8" title="Pencil / Pen (8px)">
+                <span class="size-indicator-dot dot-medium"></span>
+                <span class="size-label">Pen</span>
+              </button>
+              <button class="size-btn" data-size="16" title="Marker (16px)">
+                <span class="size-indicator-dot dot-thick"></span>
+                <span class="size-label">Marker</span>
+              </button>
+              <button class="size-btn" data-size="28" title="Chunky Ink (28px)">
+                <span class="size-indicator-dot dot-chunky"></span>
+                <span class="size-label">Chunky</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Color Palette Interface: Vibrant Drawing Palette for Sketching -->
+          <div class="tool-group tool-colors">
+            <span class="group-label">Palette</span>
+            <div class="palette-swatches">
+              <!-- Essential Standard Colors for Drawing Objects -->
+              <button class="color-swatch active" data-color="#1E1E1E" style="--swatch-color: #1E1E1E;"
+                title="Black"></button>
+              <button class="color-swatch" data-color="#EF4444" style="--swatch-color: #EF4444;" title="Red"></button>
+              <button class="color-swatch" data-color="#3B82F6" style="--swatch-color: #3B82F6;" title="Blue"></button>
+              <button class="color-swatch" data-color="#22C55E" style="--swatch-color: #22C55E;" title="Green"></button>
+              <button class="color-swatch" data-color="#FACC15" style="--swatch-color: #FACC15;"
+                title="Yellow"></button>
+              <button class="color-swatch" data-color="#854D0E" style="--swatch-color: #854D0E;" title="Brown"></button>
+
+              <!-- Extra Rich Palette Colors -->
+              <button class="color-swatch" data-color="#A855F7" style="--swatch-color: #A855F7;"
+                title="Purple"></button>
+              <button class="color-swatch" data-color="#F97316" style="--swatch-color: #F97316;"
+                title="Orange"></button>
+              <button class="color-swatch" data-color="#EC4899" style="--swatch-color: #EC4899;" title="Pink"></button>
+              <button class="color-swatch" data-color="#14B8A6" style="--swatch-color: #14B8A6;" title="Teal"></button>
+              <button class="color-swatch" data-color="#FFFFFF" style="--swatch-color: #FFFFFF;" title="White"></button>
+
+              <!-- Custom Color Picker Swatch -->
+              <label class="color-picker-label" title="Custom color picker">
+                <input type="color" id="customColorInput" value="#6366F1">
+                <span class="color-picker-wheel"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Clue Stream & Live Scoreboard -->
+      <aside class="chat-section">
+        <!-- Live Leaderboard & Connected Players in Room -->
+        <div class="players-card">
+          <div class="players-card-header">
+            <div class="lobby-title-wrap">
+              <span class="section-title">Scoreboard</span>
+              <span class="player-count-badge" id="playerCountBadge">0 Players</span>
+            </div>
+          </div>
+          <div class="players-list-pills" id="playersList"></div>
+        </div>
+
+        <!-- Chat Stream (Clues & Guesses) -->
+        <div class="chat-card">
+          <div class="chat-header">
+            <span class="chat-title" id="chatHeaderTitle">Chat</span>
+            <span class="chat-subtext" id="chatHeaderSubtext">Describers give clues • Drawer types guesses</span>
+          </div>
+
+          <!-- Scrollable Message History Area (Exclusive for Player Clues & Guesses) -->
+          <div class="chat-messages-container" id="chatMessages"></div>
+
+          <!-- Dynamic Role Action Help Bar -->
+          <div class="role-help-bar" id="roleHelpBar">
+            <span class="role-help-text" id="roleHelpText">💬 Describers: Give creative clues without trap
+              words!</span>
+          </div>
+
+          <!-- Chat Input Form -->
+          <form class="chat-input-form" id="chatForm">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Type your clue or guess..."
+              autocomplete="off" maxlength="300" />
+            <button type="submit" class="chat-send-btn" id="chatSendBtn" title="Send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Privacy & Audio Safety Modal -->
+  <div class="privacy-modal-overlay" id="privacyModalOverlay" style="display: none;">
+    <div class="privacy-modal-card" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
+      <div class="privacy-modal-header">
+        <div class="privacy-modal-title-group">
+          <span class="privacy-modal-icon">🛡️</span>
+          <h3 class="privacy-modal-title" id="privacyModalTitle">Privacy &amp; Microphone Safety</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnClosePrivacyModal" aria-label="Close modal">✕</button>
+      </div>
+      <div class="privacy-modal-body">
+        <div class="privacy-pillar">
+          <div class="pillar-header">
+            <span class="pillar-emoji">🎙️</span>
+            <strong>Real-Time Voice Streaming Only</strong>
+          </div>
+          <p>Microphone audio is only streamed during active rounds when you actively hold the voice button or Spacebar.
+            Audio clips are up to 2 seconds long and sent encrypted to our speech recognition engine.</p>
+        </div>
+        <div class="privacy-pillar">
+          <div class="pillar-header">
+            <span class="pillar-emoji">🚫</span>
+            <strong>Zero Audio Storage or Voiceprints</strong>
+          </div>
+          <p>We do not create biometric voiceprints, do not log or store audio files, and do not sell or train AI models
+            with your voice. The audio buffer is immediately freed from memory after transcription.</p>
+        </div>
+        <div class="privacy-pillar">
+          <div class="pillar-header">
+            <span class="pillar-emoji">👥</span>
+            <strong>Temporary Session Data</strong>
+          </div>
+          <p>Player nicknames, room IDs, and in-game scores are kept in memory only for the duration of the match and
+            are permanently deleted when all players leave the room.</p>
+        </div>
+        <div class="privacy-pillar">
+          <div class="pillar-header">
+            <span class="pillar-emoji">🧒</span>
+            <strong>COPPA &amp; Age Compliance</strong>
+          </div>
+          <p>Transcribble is intended for users aged 13 and older. We do not knowingly collect personal information from
+            children under 13.</p>
+        </div>
+      </div>
+      <div class="privacy-modal-footer">
+        <button type="button" class="btn-privacy-done" id="btnPrivacyDone">Got It, Let's Play!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+
+</html>

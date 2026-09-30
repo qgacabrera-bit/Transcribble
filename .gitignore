@@ -1,0 +1,111 @@
+# ==============================================================================
+# Transcribble - Production Git Ignore Configuration
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment Variables & Secrets (CRITICAL: Never commit secrets)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Explicitly allow the safe public template to be tracked
+!.env.example
+
+# Private Keys, Certificates, and Service Credentials
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+credentials.json
+service-account*.json
+
+# ------------------------------------------------------------------------------
+# 2. Dependencies
+# ------------------------------------------------------------------------------
+node_modules/
+jspm_packages/
+web_modules/
+
+# Note: package-lock.json is NOT ignored so that production hosts (Render, 
+# Railway, Fly.io, Heroku, Docker) can perform fast, reproducible 'npm ci' installs.
+
+# ------------------------------------------------------------------------------
+# 3. Logs & Process Information
+# ------------------------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.pid.lock
+*.seed
+
+# ------------------------------------------------------------------------------
+# 4. OS & File System Junk
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ------------------------------------------------------------------------------
+# 5. IDE & Editor Metadata
+# ------------------------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# ------------------------------------------------------------------------------
+# 6. Build, Cache, Testing & Temporary Directories
+# ------------------------------------------------------------------------------
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+tmp/
+temp/
+.tmp/
+scratch/
+coverage/
+.nyc_output/
+
+# ------------------------------------------------------------------------------
+# 7. Local Agent & Development Artifacts
+# ------------------------------------------------------------------------------
+.system_generated/
+.gemini/
+.agents/
