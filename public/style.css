@@ -2510,15 +2510,15 @@ body:has(#landingOverlay:not(.hidden)) .app-container,
 .rules-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .rule-role-box {
   background: var(--bg-subtle);
   border: 1.5px solid #000000;
   border-radius: var(--radius-md);
-  padding: 8px 12px;
+  padding: 6px 12px;
   box-shadow: 2px 2px 0px #000000;
 }
 
@@ -2533,12 +2533,12 @@ body:has(#landingOverlay:not(.hidden)) .app-container,
 .role-badge {
   display: inline-block;
   font-family: var(--font-heading);
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   font-weight: 800;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   border: 1.5px solid #000000;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   box-shadow: 1px 1px 0px #000000;
 }
 
@@ -2555,7 +2555,7 @@ body:has(#landingOverlay:not(.hidden)) .app-container,
 .role-points {
   margin: 0;
   padding-left: 18px;
-  font-size: 0.82rem;
+  font-size: 0.90rem;
   line-height: 1.35;
   color: var(--ink-pure);
 }
@@ -2568,8 +2568,8 @@ body:has(#landingOverlay:not(.hidden)) .app-container,
   background: #FEF3C7;
   border: 1.5px solid #000000;
   border-radius: var(--radius-pill);
-  padding: 6px 12px;
-  font-size: 0.78rem;
+  padding: 5px 12px;
+  font-size: 0.84rem;
   color: #78350F;
   box-shadow: 2px 2px 0px #000000;
   text-align: center;
