@@ -8,6 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Socket.IO Connection & Core State
   // =========================================================================
   const socket = io();
+  window.appSocket = socket;
+  window.selectedGameMode = 'classic';
+
+  if (typeof window.ImpostorClientManager === 'function') {
+    window.impostorManager = new window.ImpostorClientManager();
+    window.impostorManager.init(socket, {
+      onCanvasLockChange: (allowed) => {
+        canDraw = allowed;
+      }
+    });
+  }
 
   let currentUser = {
     id: null,
@@ -92,9 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearCanvasBtn = document.getElementById('clearCanvasBtn');
   const downloadCanvasBtn = document.getElementById('downloadCanvasBtn');
 
-  // Preview elements
+  // Preview elements & Mobile Toolbar
+  const toolPreviewPill = document.getElementById('toolPreviewPill');
   const toolPreviewDot = document.getElementById('toolPreviewDot');
   const toolPreviewText = document.getElementById('toolPreviewText');
+  const btnCloseMobileTools = document.getElementById('btnCloseMobileTools');
 
   // Chat, Mic & Lobby Elements
   const toastContainer = document.getElementById('toastContainer');
@@ -139,6 +152,68 @@ document.addEventListener('DOMContentLoaded', () => {
   let isRoomHost = false;
   let roomHostId = null;
 
+  // Mobile Responsive View Controller (Canvas vs Chat vs Scores vs Split)
+  const mobileViewNav = document.getElementById('mobileViewNav');
+  const mobileTabCanvas = document.getElementById('mobileTabCanvas');
+  const mobileTabChat = document.getElementById('mobileTabChat');
+  const mobileTabScores = document.getElementById('mobileTabScores');
+  const mobileTabSplit = document.getElementById('mobileTabSplit');
+  const chatUnreadBadge = document.getElementById('chatUnreadBadge');
+  const mainContentEl = document.getElementById('mainContent');
+
+  let currentMobileView = 'canvas';
+  let unreadChatCount = 0;
+
+  function setMobileView(viewName) {
+    if (typeof closeMobileTools === 'function') closeMobileTools();
+    currentMobileView = viewName;
+    if (mainContentEl) {
+      mainContentEl.dataset.activeView = viewName;
+    }
+    const tabs = [mobileTabCanvas, mobileTabChat, mobileTabScores, mobileTabSplit];
+    tabs.forEach(tab => {
+      if (!tab) return;
+      if (tab.dataset.view === viewName) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+
+    if (viewName === 'chat' || viewName === 'split') {
+      unreadChatCount = 0;
+      if (chatUnreadBadge) {
+        chatUnreadBadge.textContent = '0';
+        chatUnreadBadge.style.display = 'none';
+      }
+      if (chatMessages) {
+        setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
+      }
+    }
+  }
+  window.setMobileView = setMobileView;
+
+  if (mobileViewNav) {
+    mobileViewNav.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mobile-nav-btn');
+      if (btn && btn.dataset.view) {
+        setMobileView(btn.dataset.view);
+      }
+    });
+  }
+
+  function autoSwitchToCanvasOnMyTurn() {
+    if (window.innerWidth <= 768) {
+      if (currentMobileView !== 'canvas' && currentMobileView !== 'split') {
+        setMobileView('canvas');
+        if (typeof showToast === 'function') {
+          showToast('Your turn to draw! Switched to Canvas 🎨', 'info', '✏️', 2500);
+        }
+      }
+    }
+  }
+  window.autoSwitchToCanvasOnMyTurn = autoSwitchToCanvasOnMyTurn;
+
   // Session Token for persistent reconnection & grace periods across tab refresh or network drops
   let sessionToken = null;
   try {
@@ -153,6 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Strict Role & Phase State Tracking
   let currentPhase = 'LOBBY'; // 'LOBBY' or 'PLAYING'
+  window.currentPhase = currentPhase;
+
+  // Global helper to check if a match is actively in progress
+  window.isGameInProgress = function() {
+    const isImpostorActive = Boolean(window.impostorManager && window.impostorManager.isImpostorGameActive);
+    const isClassicActive = (currentPhase === 'PLAYING');
+    return isImpostorActive || isClassicActive;
+  };
   let currentMicMode = 'OPEN_MIC'; // 'OPEN_MIC' or 'BURST_2S'
 
   /**
@@ -180,6 +263,132 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 320);
     }, duration);
   }
+  window.showToast = showToast;
+
+  /**
+   * Comic Black & White Modal Confirmation Dialog
+   * Replaces ugly browser native confirm() with an authentic themed container.
+   */
+  window.showGameConfirmModal = function({
+    icon = '⚠️',
+    badge = 'ACTIVE MATCH IN PROGRESS',
+    title = 'Change Game Mode?',
+    message = 'Changing the game mode will cancel the current game in progress and return everyone to the lobby.',
+    targetName = 'Classic Mode',
+    subnote = 'Active turns and drawings will be cleared.',
+    confirmText = 'Cancel Game & Switch',
+    cancelText = 'Keep Playing',
+    showInput = false,
+    inputValue = '',
+    inputPlaceholder = 'Enter text...',
+    inputMaxLength = 18
+  } = {}) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('gameConfirmModal');
+      if (!modal) {
+        if (showInput) {
+          resolve(prompt(message || title, inputValue));
+        } else {
+          resolve(confirm(`${title}\n\n${message} ${targetName || ''}`));
+        }
+        return;
+      }
+
+      const iconEl = document.getElementById('gameConfirmIcon');
+      const badgeEl = document.getElementById('gameConfirmBadge');
+      const titleEl = document.getElementById('gameConfirmTitle');
+      const descEl = document.getElementById('gameConfirmDesc');
+      const targetBadgeEl = document.getElementById('gameConfirmTargetBadge');
+      const targetWrap = document.getElementById('gameConfirmTargetWrap');
+      const inputWrap = document.getElementById('gameConfirmInputWrap');
+      const inputEl = document.getElementById('gameConfirmInput');
+      const subnoteEl = document.getElementById('gameConfirmSubnote');
+      const btnCancel = document.getElementById('btnGameConfirmCancel');
+      const btnOk = document.getElementById('btnGameConfirmOk');
+
+      if (iconEl) iconEl.textContent = icon;
+      if (badgeEl) badgeEl.textContent = badge;
+      if (titleEl) titleEl.textContent = title;
+      if (descEl) descEl.textContent = message;
+
+      if (showInput && inputWrap && inputEl) {
+        inputWrap.style.display = 'block';
+        inputEl.value = inputValue || '';
+        inputEl.placeholder = inputPlaceholder || '';
+        inputEl.maxLength = inputMaxLength || 18;
+        if (targetWrap) targetWrap.style.display = 'none';
+        setTimeout(() => {
+          inputEl.focus();
+          inputEl.select();
+        }, 50);
+      } else {
+        if (inputWrap) inputWrap.style.display = 'none';
+        if (targetBadgeEl && targetWrap) {
+          if (targetName) {
+            targetBadgeEl.textContent = targetName;
+            targetWrap.style.display = 'block';
+          } else {
+            targetWrap.style.display = 'none';
+          }
+        }
+      }
+
+      if (subnoteEl) {
+        subnoteEl.textContent = subnote || '';
+        subnoteEl.style.display = subnote ? 'block' : 'none';
+      }
+
+      if (btnCancel) btnCancel.textContent = cancelText;
+      if (btnOk) btnOk.textContent = confirmText;
+
+      modal.style.display = 'flex';
+
+      function cleanUp() {
+        modal.style.display = 'none';
+        btnCancel?.removeEventListener('click', handleCancel);
+        btnOk?.removeEventListener('click', handleConfirm);
+        modal.removeEventListener('click', handleOverlayClick);
+        document.removeEventListener('keydown', handleKeyDown);
+      }
+
+      function handleConfirm() {
+        if (showInput && inputEl) {
+          const val = inputEl.value.trim();
+          cleanUp();
+          resolve(val || null);
+        } else {
+          cleanUp();
+          resolve(true);
+        }
+      }
+
+      function handleCancel() {
+        cleanUp();
+        resolve(showInput ? null : false);
+      }
+
+      function handleOverlayClick(e) {
+        if (e.target === modal) {
+          handleCancel();
+        }
+      }
+
+      function handleKeyDown(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleCancel();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          handleConfirm();
+        }
+      }
+
+      btnCancel?.addEventListener('click', handleCancel);
+      btnOk?.addEventListener('click', handleConfirm);
+      modal.addEventListener('click', handleOverlayClick);
+      document.addEventListener('keydown', handleKeyDown);
+    });
+  };
 
   // Server-triggered disappearing notification toasts
   socket.on('notification', (data) => {
@@ -353,9 +562,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Return to Home Screen (Landing Page)
-  function returnToHomeScreen() {
-    if (currentPhase === 'PLAYING') {
-      if (!confirm('Leave current game and return to the Home Screen?')) {
+  async function returnToHomeScreen() {
+    const isGameActive = (typeof window.isGameInProgress === 'function')
+      ? window.isGameInProgress()
+      : (currentPhase === 'PLAYING' || Boolean(window.impostorManager && window.impostorManager.isImpostorGameActive));
+
+    if (isGameActive) {
+      const confirmed = await window.showGameConfirmModal({
+        icon: '🚪',
+        badge: 'LEAVING MATCH',
+        title: 'Return to Home Screen?',
+        message: 'Leave current game and return to the Home Screen? Your progress in this room will be lost.',
+        targetName: 'Home Screen',
+        subnote: 'You can rejoin using the room code if the match is still active.',
+        confirmText: 'Leave Game',
+        cancelText: 'Stay in Match'
+      });
+      if (!confirmed) {
         return;
       }
     }
@@ -1354,8 +1577,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const scaleX = CANVAS_WIDTH / rect.width;
     const scaleY = CANVAS_HEIGHT / rect.height;
 
-    const rawX = (event.clientX - rect.left) * scaleX;
-    const rawY = (event.clientY - rect.top) * scaleY;
+    let clientX = event.clientX;
+    let clientY = event.clientY;
+
+    if (typeof clientX !== 'number' || isNaN(clientX)) {
+      if (event.touches && event.touches.length > 0) {
+        clientX = event.touches[0].clientX;
+        clientY = event.touches[0].clientY;
+      } else if (event.changedTouches && event.changedTouches.length > 0) {
+        clientX = event.changedTouches[0].clientX;
+        clientY = event.changedTouches[0].clientY;
+      }
+    }
+
+    const rawX = (clientX - rect.left) * scaleX;
+    const rawY = (clientY - rect.top) * scaleY;
 
     return {
       x: Math.max(0, Math.min(CANVAS_WIDTH, rawX)),
@@ -1399,10 +1635,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.restore();
   }
 
-  // Pointer Events handling
+  // Pointer Events handling (Mouse, Stylus, and Touch)
   canvas.addEventListener('pointerdown', (e) => {
     if (!canDraw) return;
     if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.cancelable) e.preventDefault();
 
     try {
       canvas.setPointerCapture(e.pointerId);
@@ -1430,6 +1667,7 @@ document.addEventListener('DOMContentLoaded', () => {
   canvas.addEventListener('pointermove', (e) => {
     updateCursorPreview(e);
     if (!isDrawing || !canDraw) return;
+    if (e.cancelable) e.preventDefault();
 
     const coords = getCanvasCoords(e);
     const currX = coords.x;
@@ -1478,8 +1716,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (canDraw) canvasCursor.style.display = 'block';
   });
 
+  // Dedicated touch listeners to guarantee no iOS/Android gesture interference (pinch zoom, pull-to-refresh) while sketching
+  ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(eventType => {
+    canvas.addEventListener(eventType, (e) => {
+      if (canDraw && e.cancelable) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  });
+
   function updateCursorPreview(e) {
-    if (!canDraw) {
+    // Hide artificial cursor preview on touch screens to not obstruct the user's finger
+    if (!canDraw || e.pointerType === 'touch') {
       canvasCursor.style.display = 'none';
       return;
     }
@@ -1582,9 +1830,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  clearCanvasBtn.addEventListener('click', () => {
+  // =========================================================================
+  // Mobile Collapsible Options Window (Top-Left of Canvas)
+  // =========================================================================
+  function positionMobileTools() {
+    if (!artToolbar || !toolPreviewPill || !canvasSection) return;
+    if (window.innerWidth > 768) {
+      artToolbar.style.top = '';
+      artToolbar.style.left = '';
+      return;
+    }
+    const pillRect = toolPreviewPill.getBoundingClientRect();
+    const sectionRect = canvasSection.getBoundingClientRect();
+
+    // Position directly under the tool preview pill
+    const topOffset = Math.max(8, Math.round(pillRect.bottom - sectionRect.top + 6));
+    const leftOffset = Math.max(8, Math.round(pillRect.left - sectionRect.left));
+    artToolbar.style.top = `${topOffset}px`;
+    artToolbar.style.left = `${leftOffset}px`;
+  }
+
+  function toggleMobileTools(forceState) {
+    if (!artToolbar) return;
+    const shouldOpen = (typeof forceState === 'boolean')
+      ? forceState
+      : !artToolbar.classList.contains('mobile-tools-open');
+
+    if (shouldOpen) {
+      positionMobileTools();
+      artToolbar.classList.add('mobile-tools-open');
+      if (toolPreviewPill) toolPreviewPill.classList.add('active');
+    } else {
+      artToolbar.classList.remove('mobile-tools-open');
+      if (toolPreviewPill) toolPreviewPill.classList.remove('active');
+    }
+  }
+
+  function closeMobileTools() {
+    if (artToolbar && artToolbar.classList.contains('mobile-tools-open')) {
+      artToolbar.classList.remove('mobile-tools-open');
+      if (toolPreviewPill) toolPreviewPill.classList.remove('active');
+    }
+  }
+  window.closeMobileTools = closeMobileTools;
+
+  if (toolPreviewPill) {
+    toolPreviewPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.innerWidth <= 768) {
+        toggleMobileTools();
+      }
+    });
+  }
+
+  if (btnCloseMobileTools) {
+    btnCloseMobileTools.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeMobileTools();
+    });
+  }
+
+  // Prevent taps inside the popover from bubbling up to document
+  if (artToolbar) {
+    artToolbar.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Close options window when user touches or clicks the canvas to draw
+  if (canvas) {
+    canvas.addEventListener('pointerdown', () => {
+      if (window.innerWidth <= 768) closeMobileTools();
+    });
+    canvas.addEventListener('touchstart', () => {
+      if (window.innerWidth <= 768) closeMobileTools();
+    }, { passive: true });
+  }
+
+  // Close when tapping anywhere outside the popover window or pill
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && artToolbar && artToolbar.classList.contains('mobile-tools-open')) {
+      if (!artToolbar.contains(e.target) && (!toolPreviewPill || !toolPreviewPill.contains(e.target))) {
+        closeMobileTools();
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      closeMobileTools();
+      if (artToolbar) {
+        artToolbar.style.top = '';
+        artToolbar.style.left = '';
+      }
+    } else if (artToolbar && artToolbar.classList.contains('mobile-tools-open')) {
+      positionMobileTools();
+    }
+  });
+
+  clearCanvasBtn.addEventListener('click', async () => {
     if (!canDraw) return;
-    if (confirm('Are you sure you want to clear the canvas for all players?')) {
+    const confirmed = await window.showGameConfirmModal({
+      icon: '🗑️',
+      badge: 'CLEAR CANVAS',
+      title: 'Clear Entire Board?',
+      message: 'Are you sure you want to clear the canvas for all players?',
+      targetName: 'Erase Everything',
+      subnote: 'All current drawings on the canvas will be wiped.',
+      confirmText: 'Clear Board',
+      cancelText: 'Keep Drawing'
+    });
+    if (confirmed) {
       socket.emit('clear-canvas');
     }
   });
@@ -1626,6 +1982,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state) return;
 
     currentPhase = state.phase || 'LOBBY';
+    window.currentPhase = currentPhase;
     gameMode = state.subPhase || state.phase;
     myRole = state.role || 'LOBBY';
     currentMicMode = state.micMode || 'OPEN_MIC';
@@ -1635,11 +1992,27 @@ document.addEventListener('DOMContentLoaded', () => {
     timeLeft = (typeof state.timeLeft === 'number') ? state.timeLeft : 0;
     totalTime = (typeof state.totalTime === 'number') ? state.totalTime : 80;
 
-    if (typeof state.isHost === 'boolean') isRoomHost = state.isHost;
+    if (typeof state.isHost === 'boolean') {
+      isRoomHost = state.isHost;
+      window.isRoomHost = isRoomHost;
+    }
     if (state.hostId) roomHostId = state.hostId;
+
+    if (state.selectedMode) {
+      window.selectedGameMode = state.selectedMode;
+      if (window.impostorManager) {
+        window.impostorManager.updateModePill(state.selectedMode);
+      }
+    }
 
     // --- 1. PHASE == LOBBY (FREE DRAWING BEFORE GAME STARTS) ---
     if (state.phase === 'LOBBY') {
+      if (window.impostorManager) {
+        window.impostorManager.isImpostorGameActive = false;
+        if (window.impostorManager.turnStrip) window.impostorManager.turnStrip.style.display = 'none';
+        if (window.impostorManager.votingOverlay) window.impostorManager.votingOverlay.style.display = 'none';
+        if (window.impostorManager.gameOverOverlay) window.impostorManager.gameOverOverlay.style.display = 'none';
+      }
       if (canvasContainer) canvasContainer.style.display = 'block';
       if (canvasTopBar) canvasTopBar.style.display = 'flex';
       if (artToolbar) {
@@ -1686,6 +2059,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 2. PHASE == PLAYING ---
+    if (state.selectedMode === 'impostor') {
+      if (canvasContainer) canvasContainer.style.display = 'block';
+      if (canvasTopBar) canvasTopBar.style.display = 'flex';
+      if (tabooGuideCard) tabooGuideCard.style.display = 'none';
+      if (drawerGuideCard) drawerGuideCard.style.display = 'none';
+      if (guesserLockOverlay) guesserLockOverlay.classList.remove('active');
+      if (drawerStatusChip) drawerStatusChip.style.display = 'none';
+      if (describerBurstBtn) describerBurstBtn.style.display = 'none';
+      if (micToggleBtn) micToggleBtn.style.display = 'inline-flex';
+
+      // Stop Game button is ONLY visible for the Host at the top header
+      if (startGameBtn) {
+        if (isRoomHost) {
+          startGameBtn.textContent = '⏹ Stop Game';
+          startGameBtn.className = 'btn-primary-action danger';
+          startGameBtn.style.display = 'inline-flex';
+          startGameBtn.disabled = false;
+          startGameBtn.title = 'Stop Impostor Mode and return to lobby';
+        } else {
+          startGameBtn.style.display = 'none';
+        }
+      }
+      return;
+    }
+
     if (canvasContainer) canvasContainer.style.display = 'block';
     if (canvasTopBar) canvasTopBar.style.display = 'flex';
 
@@ -1707,6 +2105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // A. Role == DRAWER (Blind Drawer & Guesser)
     if (state.role === 'DRAWER') {
       canDraw = true;
+      autoSwitchToCanvasOnMyTurn();
       if (artToolbar) {
         artToolbar.style.display = 'flex';
         artToolbar.classList.remove('disabled');
@@ -1787,24 +2186,63 @@ document.addEventListener('DOMContentLoaded', () => {
     applySanitizedState(state);
   });
 
-  startGameBtn.addEventListener('click', () => {
+  startGameBtn.addEventListener('click', async () => {
     if (!isRoomHost) {
-      showToast('Only the Room Host can start or end the game 👑', 'warning', '🔒', 2500);
+      showToast('Only the Room Host can start or stop the game 👑', 'warning', '🔒', 2500);
       return;
     }
 
-    if (gameMode === 'LOBBY' || gameMode === 'GAME_OVER') {
-      const activeCount = connectedUsers.filter(u => !u.disconnected).length;
-      if (activeCount < 2) {
-        showToast(`Need at least 2 players to start! Invite friends using Room Code: ${currentRoomId} 👥`, 'warning', '⚠️', 3500);
-        return;
+    const isImpostorActive = window.impostorManager && window.impostorManager.isImpostorGameActive;
+
+    // 1. If Impostor mode is active -> STOP GAME IMMEDIATELY
+    if (isImpostorActive) {
+      const confirmed = await window.showGameConfirmModal({
+        icon: '⏹️',
+        badge: 'HOST ACTION',
+        title: 'Stop Impostor Game?',
+        message: 'Stop the active Impostor match and return everyone to the lobby?',
+        targetName: 'Lobby',
+        subnote: 'Active turns and secret word will end.',
+        confirmText: 'Stop Game',
+        cancelText: 'Keep Playing'
+      });
+      if (confirmed) {
+        socket.emit('stop-game');
       }
-      socket.emit('start-game');
-    } else {
-      if (confirm('Return to Lobby? Current round will end.')) {
+      return;
+    }
+
+    // 2. If Classic mode is playing -> END MATCH
+    if (currentPhase === 'PLAYING') {
+      const confirmed = await window.showGameConfirmModal({
+        icon: '⏹️',
+        badge: 'HOST ACTION',
+        title: 'End Classic Match?',
+        message: 'Stop the active round and return all players to the lobby?',
+        targetName: 'Lobby',
+        subnote: 'Current round scores will be finalized.',
+        confirmText: 'End Match',
+        cancelText: 'Keep Playing'
+      });
+      if (confirmed) {
         socket.emit('leave-to-lobby');
       }
+      return;
     }
+
+    // 3. Lobby Mode: Only Host can start game
+    if (!isRoomHost) {
+      showToast('Waiting for the Room Host to start the game 👑', 'warning', '🔒', 2500);
+      return;
+    }
+
+    const activeCount = connectedUsers.filter(u => !u.disconnected).length;
+    if (activeCount < 2) {
+      showToast(`Need at least 2 players to start! Invite friends using Room Code: ${currentRoomId} 👥`, 'warning', '⚠️', 3500);
+      return;
+    }
+    const mode = window.selectedGameMode || 'classic';
+    socket.emit('start-game', { mode });
   });
 
   playAgainBtn.addEventListener('click', () => {
@@ -1812,7 +2250,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Waiting for the Room Host to start the next match 👑', 'info', '⏳', 2500);
       return;
     }
-    socket.emit('start-game');
+    const mode = window.selectedGameMode || 'classic';
+    socket.emit('start-game', { mode });
     gameOverOverlay.classList.remove('active');
   });
 
@@ -2219,11 +2658,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chatMessages.appendChild(bubble);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Track unread messages on mobile when Chat view is not visible
+    if (window.innerWidth <= 768 && currentMobileView !== 'chat' && currentMobileView !== 'split') {
+      if (!isMe) {
+        unreadChatCount++;
+        if (chatUnreadBadge) {
+          chatUnreadBadge.textContent = unreadChatCount > 99 ? '99+' : unreadChatCount;
+          chatUnreadBadge.style.display = 'inline-block';
+        }
+      }
+    }
   }
 
   if (editNameBtn) {
-    editNameBtn.addEventListener('click', () => {
-      const newName = prompt('Enter your nickname (max 18 chars):', currentUser.username);
+    editNameBtn.addEventListener('click', async () => {
+      const newName = await window.showGameConfirmModal({
+        icon: '✏️',
+        badge: 'PLAYER PROFILE',
+        title: 'Change Your Nickname',
+        message: 'Enter your new display nickname below:',
+        showInput: true,
+        inputValue: currentUser.username || '',
+        inputPlaceholder: 'Enter nickname (max 18 chars)...',
+        inputMaxLength: 18,
+        confirmText: 'Save Nickname',
+        cancelText: 'Cancel'
+      });
       if (newName && newName.trim()) {
         const cleanName = newName.trim().slice(0, 18);
         try {

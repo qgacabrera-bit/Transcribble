@@ -4,6 +4,7 @@ const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
 const { DeepgramClient, createClient } = require('@deepgram/sdk');
+const { ImpostorGame, IMPOSTOR_STATES } = require('./server/impostorGame');
 
 const app = express();
 const server = http.createServer(app);
@@ -181,30 +182,8 @@ const ROUND_TIME_SECONDS = 80;
 const ROUND_INTERMISSION_SECONDS = 6;
 const TOTAL_ROUNDS = 3;
 
-const TABOO_CARDS = [
-  { word: 'Apple', category: 'Food', bannedWords: ['Fruit', 'Red', 'Tree', 'Pie', 'Juice', 'Doctor', 'Mac', 'iPhone'] },
-  { word: 'Pizza', category: 'Food', bannedWords: ['Cheese', 'Pepperoni', 'Italy', 'Crust', 'Slice', 'Delivery', 'Dough'] },
-  { word: 'Airplane', category: 'Transport', bannedWords: ['Fly', 'Wings', 'Pilot', 'Sky', 'Airport', 'Jet', 'Crash', 'Engine'] },
-  { word: 'Guitar', category: 'Music', bannedWords: ['Strings', 'Music', 'Play', 'Rock', 'Instrument', 'Acoustic', 'Electric'] },
-  { word: 'Cat', category: 'Animals', bannedWords: ['Pet', 'Meow', 'Feline', 'Dog', 'Kitten', 'Whisker', 'Fur', 'Tail'] },
-  { word: 'Submarine', category: 'Vehicles', bannedWords: ['Underwater', 'Ocean', 'Torpedo', 'Yellow', 'Periscope', 'Ship', 'Boat'] },
-  { word: 'Spider', category: 'Animals', bannedWords: ['Web', 'Eight', 'Legs', 'Insect', 'Bite', 'Arachnid', 'Creepy'] },
-  { word: 'Clock', category: 'Objects', bannedWords: ['Time', 'Hour', 'Minute', 'Second', 'Watch', 'Tick', 'Hands'] },
-  { word: 'Campfire', category: 'Outdoors', bannedWords: ['Fire', 'Wood', 'Tent', 'Marshmallow', 'Smoke', 'Burn', 'Hot'] },
-  { word: 'Snowman', category: 'Winter', bannedWords: ['Snow', 'Winter', 'Carrot', 'Cold', 'Frosty', 'White', 'Melting'] },
-  { word: 'Castle', category: 'Architecture', bannedWords: ['King', 'Queen', 'Fortress', 'Knight', 'Moat', 'Tower', 'Stone'] },
-  { word: 'Bicycle', category: 'Vehicles', bannedWords: ['Wheels', 'Ride', 'Pedal', 'Handlebars', 'Bike', 'Chain', 'Two'] },
-  { word: 'Telescope', category: 'Science', bannedWords: ['Stars', 'Space', 'Look', 'Moon', 'Sky', 'Astronomy', 'Lens'] },
-  { word: 'Ghost', category: 'Spooky', bannedWords: ['Boo', 'Spooky', 'Haunted', 'Sheet', 'Dead', 'Spirit', 'Halloween'] },
-  { word: 'Penguin', category: 'Animals', bannedWords: ['Bird', 'Antarctica', 'Ice', 'Tuxedo', 'Cold', 'Fly', 'Waddle'] },
-  { word: 'Cactus', category: 'Nature', bannedWords: ['Desert', 'Prickly', 'Plant', 'Spines', 'Green', 'Water', 'Thorn'] },
-  { word: 'Volcano', category: 'Nature', bannedWords: ['Lava', 'Erupt', 'Mountain', 'Magma', 'Ash', 'Fire', 'Hot'] },
-  { word: 'Rocket', category: 'Space', bannedWords: ['Space', 'Launch', 'Astronaut', 'NASA', 'Moon', 'Fly', 'Fuel'] },
-  { word: 'Dragon', category: 'Mythology', bannedWords: ['Fire', 'Breathe', 'Wings', 'Scales', 'Monster', 'Medieval', 'Fly'] },
-  { word: 'Camera', category: 'Technology', bannedWords: ['Photo', 'Picture', 'Snap', 'Lens', 'Flash', 'Shoot', 'Video'] },
-  { word: 'Lighthouse', category: 'Maritime', bannedWords: ['Ocean', 'Light', 'Beacon', 'Coast', 'Tower', 'Ships', 'Water'] },
-  { word: 'Popcorn', category: 'Food', bannedWords: ['Movie', 'Corn', 'Kernel', 'Butter', 'Salt', 'Microwave', 'Theater'] }
-];
+const { getRandomCard, getAllCards, getCardCount } = require('./server/wordBank');
+const TABOO_CARDS = getAllCards();
 
 // ============================================================================
 // Multi-Room State Management
@@ -262,7 +241,10 @@ function createRoom(requestedId = null, isCustom = false) {
       totalTime: ROUND_TIME_SECONDS,
       tabooViolations: 0
     },
-    timerInterval: null
+    timerInterval: null,
+    selectedMode: 'classic', // 'classic' | 'impostor'
+    usedWords: new Set(),
+    impostorGame: null
   };
   rooms.set(id, room);
   console.log(`[Room] Created room ${id} (custom: ${isCustom}). Active rooms: ${rooms.size}`);
@@ -342,16 +324,24 @@ function getSanitizedState(room, socketId) {
 
   let role = 'LOBBY';
   if (!isLobby) {
-    role = isDrawer ? 'DRAWER' : 'DESCRIBER';
+    if (room.selectedMode === 'impostor') {
+      const isImp = room.impostorGame && room.impostorGame.isImpostor(socketId);
+      role = isImp ? 'IMPOSTOR' : 'REGULAR';
+    } else {
+      role = isDrawer ? 'DRAWER' : 'DESCRIBER';
+    }
   }
 
   let micMode = 'OPEN_MIC';
-  if (!isLobby && isDescriber) {
+  if (!isLobby && isDescriber && room.selectedMode !== 'impostor') {
     micMode = 'BURST_2S';
   }
 
-  const canDraw = isLobby || (isDrawer && gs.mode === GAME_STATES.ROUND_ACTIVE);
-  const hasSecretAccess = (!isLobby && isDescriber);
+  let canDraw = isLobby || (isDrawer && gs.mode === GAME_STATES.ROUND_ACTIVE);
+  if (room.selectedMode === 'impostor' && gs.phase === PHASES.PLAYING) {
+    canDraw = room.impostorGame ? room.impostorGame.canDraw(socketId) : false;
+  }
+  const hasSecretAccess = (!isLobby && isDescriber && room.selectedMode !== 'impostor');
 
   return {
     roomId: room.id,
@@ -360,6 +350,7 @@ function getSanitizedState(room, socketId) {
     role,
     micMode,
     canDraw,
+    selectedMode: room.selectedMode || 'classic',
     drawerId: gs.drawerId,
     drawerUsername: gs.drawerUsername,
     currentRound: gs.currentRound,
@@ -662,6 +653,10 @@ function finalizePlayerLeave(room, socketId, user) {
   broadcastSanitizedState(room);
   io.to(room.id).emit('players-update', getPublicUsers(room));
 
+  if (room.impostorGame) {
+    room.impostorGame.handleDisconnect(socketId);
+  }
+
   if (room.gameState.drawerId === socketId && room.gameState.mode === GAME_STATES.ROUND_ACTIVE) {
     endRound(room, false, 'The Blind Drawer disconnected.');
   }
@@ -723,8 +718,9 @@ function startRound(room) {
   room.drawingHistory = [];
   io.to(room.id).emit('clear-canvas', { clearedBy: 'System' });
 
-  // Pick random Taboo card
-  const card = TABOO_CARDS[Math.floor(Math.random() * TABOO_CARDS.length)];
+  // Pick random Taboo card (avoiding recent repeats)
+  if (!room.usedWords) room.usedWords = new Set();
+  const card = getRandomCard(room.usedWords);
 
   room.gameState.phase = PHASES.PLAYING;
   room.gameState.mode = GAME_STATES.ROUND_ACTIVE;
@@ -900,6 +896,10 @@ function endGame(room) {
 function returnToLobby(room, reason) {
   if (!room) return;
   clearInterval(room.timerInterval);
+  if (room.impostorGame) {
+    room.impostorGame.cleanup();
+    room.impostorGame = null;
+  }
   room.gameState.phase = PHASES.LOBBY;
   room.gameState.mode = GAME_STATES.LOBBY;
   room.gameState.drawerId = null;
@@ -913,6 +913,7 @@ function returnToLobby(room, reason) {
   broadcastSanitizedState(room);
 
   io.to(room.id).emit('return-to-lobby', { reason });
+  io.to(room.id).emit('impostor-game-stopped', { reason });
   io.to(room.id).emit('players-update', getPublicUsers(room));
 
   if (reason) {
@@ -964,7 +965,7 @@ io.on('connection', (socket) => {
   });
 
   // 4. Start Game (Room scoped - ONLY HOST CAN START)
-  socket.on('start-game', () => {
+  socket.on('start-game', (data) => {
     const room = getSocketRoom(socket.id);
     if (!room) return;
 
@@ -979,12 +980,94 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (room.gameState.mode === GAME_STATES.LOBBY || room.gameState.mode === GAME_STATES.GAME_OVER) {
-      startGame(room);
+    if (data && data.mode) {
+      room.selectedMode = (data.mode === 'impostor') ? 'impostor' : 'classic';
+    }
+
+    const isGameOverState = (room.gameState.mode === GAME_STATES.GAME_OVER || (room.impostorGame && room.impostorGame.state === IMPOSTOR_STATES.GAME_OVER));
+
+    if (room.gameState.mode === GAME_STATES.LOBBY || isGameOverState) {
+      if (room.selectedMode === 'impostor') {
+        room.impostorGame = new ImpostorGame(room, io);
+        const started = room.impostorGame.start();
+        if (started) {
+          room.gameState.phase = PHASES.PLAYING;
+          room.gameState.mode = 'IMPOSTOR_ACTIVE';
+          broadcastSanitizedState(room);
+          io.to(room.id).emit('players-update', getPublicUsers(room));
+        }
+      } else {
+        startGame(room);
+      }
     }
   });
 
-  // 5. Leave / Return to Lobby (ONLY HOST CAN RETURN TO LOBBY)
+  // 4.1 Set Game Mode (Host only)
+  socket.on('set-game-mode', (data) => {
+    const room = getSocketRoom(socket.id);
+    if (!room) return;
+
+    if (room.hostId && room.hostId !== socket.id) {
+      sendPrivateNotification(socket, 'Only the room host can change the game mode! 👑', 'warning', '🔒');
+      return;
+    }
+
+    const mode = (data && data.mode === 'impostor') ? 'impostor' : 'classic';
+    const modeLabel = (mode === 'impostor') ? '🕵️ Impostor Mode' : '🎨 Classic Mode';
+
+    // Check if a game is currently in progress
+    const isMidGame = (room.gameState.phase === PHASES.PLAYING) ||
+                      (room.impostorGame && room.impostorGame.state !== 'GAME_OVER');
+    const needsLobbyReset = isMidGame || Boolean(room.impostorGame) || (room.gameState.mode === GAME_STATES.GAME_OVER);
+
+    if (isMidGame) {
+      console.log(`[Mode Switch Mid-Game] Host changed mode to ${mode} in room ${room.id}. Cancelling active match.`);
+      returnToLobby(room, `Game cancelled: Host switched mode to ${modeLabel}.`);
+    } else if (needsLobbyReset) {
+      returnToLobby(room, null);
+    }
+
+    room.selectedMode = mode;
+    io.to(room.id).emit('game-mode-changed', {
+      mode: room.selectedMode,
+      changedBy: room.connectedUsers.get(socket.id)?.username || 'Host'
+    });
+    broadcastNotification(room, `Game Mode set to: ${modeLabel}`, 'info', '🎮', 3000);
+    broadcastSanitizedState(room);
+  });
+
+  // 4.2 Cast Vote (Impostor Mode)
+  socket.on('cast-vote', (data) => {
+    const room = getSocketRoom(socket.id);
+    if (!room || !room.impostorGame) return;
+    const targetId = data && data.targetId;
+    if (!targetId) return;
+    room.impostorGame.castVote(socket.id, targetId);
+  });
+
+  // 4.3 Stop Game (Host only - stops active Impostor or Classic game and returns to lobby)
+  socket.on('stop-game', () => {
+    const room = getSocketRoom(socket.id);
+    if (!room) return;
+
+    if (room.hostId && room.hostId !== socket.id) {
+      sendPrivateNotification(socket, 'Only the room host can stop the game! 👑', 'warning', '🔒');
+      return;
+    }
+
+    returnToLobby(room, 'Host stopped the game.');
+  });
+
+  // 4.4 Impostor Stop Game & Guess Word
+  socket.on('impostor-guess-word', (data) => {
+    const room = getSocketRoom(socket.id);
+    if (!room || !room.impostorGame) return;
+    const guess = data && data.guess;
+    if (!guess) return;
+    room.impostorGame.handleImpostorGuess(socket.id, guess);
+  });
+
+  // 5. Leave / Return to Lobby (Host only)
   socket.on('leave-to-lobby', () => {
     const room = getSocketRoom(socket.id);
     if (!room) return;
@@ -1007,8 +1090,12 @@ io.on('connection', (socket) => {
     const room = getSocketRoom(socket.id);
     if (!room) return;
 
-    if (room.gameState.phase === PHASES.PLAYING && (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId)) {
-      return;
+    if (room.gameState.phase === PHASES.PLAYING) {
+      if (room.selectedMode === 'impostor' && room.impostorGame) {
+        if (!room.impostorGame.canDraw(socket.id)) return;
+      } else if (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId) {
+        return;
+      }
     }
     if (!strokeData || typeof strokeData.currX !== 'number' || typeof strokeData.currY !== 'number') {
       return;
@@ -1025,8 +1112,12 @@ io.on('connection', (socket) => {
     const room = getSocketRoom(socket.id);
     if (!room) return;
 
-    if (room.gameState.phase === PHASES.PLAYING && (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId)) {
-      return;
+    if (room.gameState.phase === PHASES.PLAYING) {
+      if (room.selectedMode === 'impostor' && room.impostorGame) {
+        if (!room.impostorGame.canDraw(socket.id)) return;
+      } else if (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId) {
+        return;
+      }
     }
     if (!dotData || typeof dotData.x !== 'number' || typeof dotData.y !== 'number') {
       return;
@@ -1043,8 +1134,12 @@ io.on('connection', (socket) => {
     const room = getSocketRoom(socket.id);
     if (!room) return;
 
-    if (room.gameState.phase === PHASES.PLAYING && (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId)) {
-      return;
+    if (room.gameState.phase === PHASES.PLAYING) {
+      if (room.selectedMode === 'impostor' && room.impostorGame) {
+        if (!room.impostorGame.canDraw(socket.id)) return;
+      } else if (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId) {
+        return;
+      }
     }
     room.drawingHistory = [];
     const user = room.connectedUsers.get(socket.id);

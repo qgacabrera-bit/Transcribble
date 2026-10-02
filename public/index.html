@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Transcribble | Reverse Drawing &amp; Voice Party Game</title>
   <meta name="description"
     content="We flipped classic drawing party games upside down! In this blind-sketch challenge, the artist has no idea what they are drawing. The rest of the lobby must describe the secret word using their microphones, but beware: our voice recognition is listening for forbidden trap words. Guide the blind artist, avoid the traps, and try not to shout over each other!">
@@ -12,7 +12,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@500;600;700;800&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.6">
 </head>
 
 <body>
@@ -113,14 +113,13 @@
                 <span class="mode-tag mode-tag-soon">Soon</span>
               </div>
 
-              <!-- Mode 3: Imposter (Locked) -->
-              <div class="mode-btn mode-btn-locked"
-                title="Imposter Mode - Everyone knows the secret word except one! (Coming Soon)">
-                <div class="mode-lock-overlay">🔒</div>
+              <!-- Mode 3: Impostor Mode -->
+              <button type="button" class="mode-btn" id="modeBtnImpostor"
+                title="Impostor Mode: Sequential collaborative drawing! One player doesn't know the word.">
                 <span class="mode-btn-icon">🕵️</span>
-                <span class="mode-btn-title">Imposter</span>
-                <span class="mode-tag mode-tag-soon">Soon</span>
-              </div>
+                <span class="mode-btn-title">Impostor</span>
+                <span class="mode-tag" id="modeTagImpostor">Select</span>
+              </button>
             </div>
           </div>
         </div>
@@ -156,7 +155,7 @@
                     </p>
                     <div class="about-desc-callout">
                       <span class="callout-icon">🎯</span>
-                      <span>Guide the blind artist, avoid the traps, and try not to shout over each other!</span>
+                      <span>Guide the blind artist in Classic Mode, or outsmart the faker in Impostor Mode!</span>
                     </div>
                   </div>
                 </div>
@@ -171,16 +170,12 @@
                     <h3 class="post-it-title">Patch Notes &amp; Updates</h3>
                     <div class="post-it-content">
                       <ul class="post-it-list">
-                        <li><strong>Multi-Room Matchmaking:</strong> Jump into public lobbies or create private 5-letter
-                          rooms for game night!</li>
-                        <li><strong>Interactive Desk Scratchpad:</strong> Doodle on the paper background while waiting,
-                          complete with paper peel-away wipe!</li>
-                        <li><strong>2-Second Voice Burst Engine:</strong> Quick push-to-speak audio clips with live
-                          voice wave indicators.</li>
-                        <li><strong>Trap Word Radar:</strong> Real-time clue speech and text censorship with buzzer
-                          alerts.</li>
+                        <li><strong>Impostor Mode:</strong> One secret faker doesn't know the word! Take turns sketching, vote on suspects, or guess the word to steal the win!</li>
+                        <li><strong>Mobile Optimization:</strong> Full responsive smartphone layout, quick-switch tabs, and top-left collapsible drawing toolkit!</li>
+                        <li><strong>Host Game Controls:</strong> Host can switch modes mid-match with safety confirmation alerts, plus start or stop games anytime.</li>
+                        <li><strong>Huge Word Bank:</strong> 100+ fresh categorized words &amp; taboo traps so rounds never feel repetitive!</li>
                       </ul>
-                      <div class="post-it-signature">— Dev Scribbles &bull; v2.1 ✏️</div>
+                      <div class="post-it-signature">— Dev Scribbles &bull; v2.6 ✏️</div>
                     </div>
                   </div>
                 </div>
@@ -292,6 +287,12 @@
 
       <!-- Party Game Word / Banner Info -->
       <div class="game-banner" id="gameBanner">
+        <!-- Room Mode Switcher / Indicator Pill -->
+        <button type="button" class="mode-selector-pill classic-mode" id="roomModeSelectorPill" title="Switch Game Mode (Classic / Impostor)">
+          <span class="mode-pill-icon" id="roomModeIcon">🎨</span>
+          <span class="mode-pill-name" id="roomModeName">Classic</span>
+        </button>
+
         <div class="round-pill" id="roundPill">LOBBY</div>
 
         <!-- Live Countdown Timer -->
@@ -348,7 +349,28 @@
     </header>
 
     <!-- Main Workspace Area -->
-    <main class="main-content">
+    <main class="main-content" id="mainContent" data-active-view="canvas">
+      <!-- Mobile View Switcher (Only visible on smartphones & tablets <= 768px) -->
+      <div class="mobile-view-nav" id="mobileViewNav" aria-label="Mobile Navigation">
+        <button type="button" class="mobile-nav-btn active" data-view="canvas" id="mobileTabCanvas" title="View Canvas &amp; Tools">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-text">Canvas</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-view="chat" id="mobileTabChat" title="View Chat &amp; Guesses">
+          <span class="nav-icon">💬</span>
+          <span class="nav-text">Chat</span>
+          <span class="chat-unread-badge" id="chatUnreadBadge" style="display: none;">0</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-view="scores" id="mobileTabScores" title="View Scoreboard">
+          <span class="nav-icon">👥</span>
+          <span class="nav-text">Scores</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-view="split" id="mobileTabSplit" title="Split Screen (Canvas + Chat)">
+          <span class="nav-icon">📱</span>
+          <span class="nav-text">Split</span>
+        </button>
+      </div>
+
       <!-- Left Column: Canvas & Taboo Clue Board -->
       <section class="canvas-section" id="canvasSection">
         <!-- Taboo Card Banner for Describers (Hidden from Drawer) -->
@@ -389,10 +411,11 @@
         <!-- Canvas Status & Meta Bar -->
         <div class="canvas-top-bar">
           <div class="active-tool-display">
-            <span class="tool-preview-pill" id="toolPreviewPill">
+            <button type="button" class="tool-preview-pill" id="toolPreviewPill" title="Open Drawing Options">
               <span class="tool-preview-dot" id="toolPreviewDot"></span>
               <span id="toolPreviewText">Brush</span>
-            </span>
+              <span class="tool-dropdown-arrow">▾</span>
+            </button>
             <span class="drawer-status-chip" id="drawerStatusChip" style="display: none;"></span>
           </div>
 
@@ -455,10 +478,111 @@
               <button class="btn-play-again" id="playAgainBtn">Play Again</button>
             </div>
           </div>
+
+          <!-- Impostor Mode Active Turn Banner -->
+          <div class="impostor-turn-strip" id="impostorTurnStrip" style="display: none;">
+            <div class="turn-strip-inner" id="turnStripInner">
+              <span class="turn-strip-icon" id="turnStripIcon">✏️</span>
+              <span class="turn-strip-text" id="turnStripText">YOUR TURN TO DRAW!</span>
+              <span class="turn-strip-timer" id="turnStripTimer">10s</span>
+            </div>
+          </div>
+
+          <!-- Impostor Voting Phase Overlay -->
+          <div class="impostor-voting-overlay" id="impostorVotingOverlay" style="display: none;">
+            <div class="voting-modal-card">
+              <div class="voting-modal-header">
+                <div class="voting-header-title-group">
+                  <span class="voting-modal-icon">🗳️</span>
+                  <div>
+                    <h2 class="voting-modal-title">VOTE: WHO IS THE IMPOSTOR?</h2>
+                    <p class="voting-modal-subtitle">One player doesn't know the secret word. Cast your vote!</p>
+                  </div>
+                </div>
+                <div class="voting-header-actions">
+                  <div class="voting-timer-pill" id="votingTimerPill">
+                    <span class="voting-timer-icon">⏱️</span>
+                    <span class="voting-timer-digits" id="votingTimerDigits">20s</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Candidate Grid -->
+              <div class="voting-candidates-grid" id="votingCandidatesGrid"></div>
+
+              <!-- Voting Result Box -->
+              <div class="voting-result-box" id="votingResultBox" style="display: none;">
+                <div class="result-badge" id="votingResultBadge">VOTE RESULT</div>
+                <h3 class="result-headline" id="votingResultHeadline">Player X was eliminated!</h3>
+                <p class="result-details" id="votingResultDetails">They were NOT the Impostor!</p>
+                <div class="voting-breakdown" id="votingBreakdown"></div>
+              </div>
+
+              <!-- Voting Status Bar -->
+              <div class="voting-status-bar" id="votingStatusBar">
+                <span class="voting-status-text" id="votingStatusText">Click on a suspect to cast your vote</span>
+                <span class="voting-count-pill" id="votingCountPill">0 / 0 voted</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Impostor Guess Word Modal (Impostor stops game to steal victory) -->
+          <div class="impostor-guess-overlay" id="impostorGuessOverlay" style="display: none;">
+            <div class="impostor-guess-card">
+              <div class="guess-card-icon">🕵️</div>
+              <h3 class="guess-card-title">Guess the Secret Word</h3>
+              <p class="guess-card-desc">
+                Think you deduced what everyone is drawing? If you guess the secret word correctly, you <strong>WIN IMMEDIATELY</strong>! If you guess wrong, the Regulars win.
+              </p>
+              <form class="impostor-guess-form" id="impostorGuessForm">
+                <input type="text" id="impostorGuessInput" class="impostor-guess-input" placeholder="Type secret word (e.g. Pizza)..." autocomplete="off" maxlength="40" required />
+                <div class="guess-form-actions">
+                  <button type="button" class="btn-guess-cancel" id="btnCancelImpostorGuess">Cancel</button>
+                  <button type="submit" class="btn-guess-submit" id="btnSubmitImpostorGuess">Stop Game &amp; Submit Guess</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Impostor Game Over Overlay -->
+          <div class="impostor-gameover-overlay" id="impostorGameOverOverlay" style="display: none;">
+            <div class="impostor-gameover-card">
+              <div class="impostor-win-banner" id="impostorWinBanner">
+                <span class="win-banner-icon" id="impostorWinIcon">🏆</span>
+                <h2 class="win-banner-title" id="impostorWinTitle">REGULARS WIN!</h2>
+              </div>
+
+              <div class="impostor-identity-card" id="impostorIdentityCard">
+                <div class="identity-label">THE IMPOSTOR WAS:</div>
+                <div class="identity-name-wrap">
+                  <span class="identity-avatar" id="impostorAvatar">🕵️</span>
+                  <span class="identity-name" id="impostorName">Player</span>
+                </div>
+                <div class="secret-word-reveal" id="secretWordReveal">
+                  Secret Word was: <strong id="revealedSecretWord">APPLE</strong> (<span id="revealedCategory">Food</span>)
+                </div>
+              </div>
+
+              <div class="impostor-leaderboard-section">
+                <h3 class="leaderboard-heading">🏅 Final Revealed Leaderboard</h3>
+                <div class="impostor-leaderboard-list" id="impostorLeaderboardList"></div>
+              </div>
+
+              <div class="impostor-gameover-actions">
+                <button type="button" class="btn-play-again" id="impostorPlayAgainBtn">Play Again</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Traditional Coloring Materials (Toolbar) -->
         <div class="art-toolbar" id="artToolbar">
+          <!-- Mobile Header (Only visible on mobile collapsible window) -->
+          <div class="mobile-toolbar-header" id="mobileToolbarHeader">
+            <span class="mobile-toolbar-title">🎨 Drawing Options</span>
+            <button type="button" class="btn-close-mobile-tools" id="btnCloseMobileTools" title="Close Options">&times;</button>
+          </div>
+
           <!-- Tool Mode Selector (Brush vs Eraser) -->
           <div class="tool-group tool-types">
             <button class="tool-btn active" id="brushToolBtn" data-tool="brush" title="Drawing Brush">
@@ -637,8 +761,42 @@
     </div>
   </div>
 
+  <!-- Comic Black & White Custom Confirmation Modal -->
+  <div class="game-confirm-overlay" id="gameConfirmModal" style="display: none;">
+    <div class="game-confirm-card" role="dialog" aria-modal="true" aria-labelledby="gameConfirmTitle">
+      <div class="confirm-badge-icon" id="gameConfirmIcon">⚠️</div>
+      <div class="confirm-status-pill" id="gameConfirmBadge">ACTIVE GAME IN PROGRESS</div>
+      <h3 class="confirm-title" id="gameConfirmTitle">Change Game Mode?</h3>
+      
+      <div class="confirm-info-box">
+        <p class="confirm-message" id="gameConfirmDesc">
+          Changing the game mode will cancel the current game in progress and return everyone to the lobby.
+        </p>
+        <div class="confirm-target-wrap" id="gameConfirmTargetWrap">
+          <span class="confirm-target-badge" id="gameConfirmTargetBadge">🎨 Classic Mode</span>
+        </div>
+        <div class="confirm-input-wrap" id="gameConfirmInputWrap" style="display: none;">
+          <input type="text" class="confirm-input-field" id="gameConfirmInput" placeholder="Enter nickname..." maxlength="18" autocomplete="off" />
+        </div>
+        <p class="confirm-subnote" id="gameConfirmSubnote">
+          Active turns and drawings will be cleared.
+        </p>
+      </div>
+
+      <div class="confirm-actions">
+        <button type="button" class="btn-confirm-cancel" id="btnGameConfirmCancel">
+          Keep Playing
+        </button>
+        <button type="button" class="btn-confirm-proceed" id="btnGameConfirmOk">
+          Cancel Game &amp; Switch
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <script src="impostorClient.js?v=2.6"></script>
+  <script src="client.js?v=2.6"></script>
 </body>
 
 </html>
