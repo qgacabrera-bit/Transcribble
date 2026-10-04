@@ -43,8 +43,12 @@
 
       <!-- Side-by-Side Flexbox / Grid Wrapper -->
       <div class="landing-content-wrap">
-        <!-- Left Column: Login Card & Game Modes -->
-        <div class="landing-card">
+        <!-- Block 1 (Multiplayer): The existing room creation, room code entry, and matchmaking card -->
+        <div class="landing-card multiplayer-card" id="multiplayerCard">
+          <div class="landing-card-header">
+            <span class="info-header-title">🎮 Multiplayer</span>
+          </div>
+
           <!-- Alert Box for Error / Status Messaging -->
           <div class="landing-alert" id="landingAlert" style="display: none;"></div>
 
@@ -94,7 +98,7 @@
           <!-- Game Modes Selection (Bottom Section) -->
           <div class="landing-modes-section">
             <div class="modes-header-row">
-              <span class="modes-label">GAME MODES</span>
+              <span class="modes-label">MULTIPLAYER MODES</span>
             </div>
             <div class="modes-button-row">
               <!-- Mode 1: Classic (Active) -->
@@ -121,6 +125,100 @@
                 <span class="mode-tag" id="modeTagImpostor">Select</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Block 2 (Single Player): Solo Modes Picker & Zen Mode Sandbox -->
+        <div class="landing-card singleplayer-card" id="singleplayerCard">
+          <div class="landing-card-header">
+            <span class="info-header-title">🧘 Single Player</span>
+          </div>
+
+          <!-- Single Player Mode Picker -->
+          <div class="solo-mode-picker" id="soloModePicker">
+            <!-- Mode 1: Zen Mode (Top option, expandable on click) -->
+            <div class="solo-picker-item solo-item-zen" id="soloItemZen" tabindex="0" role="button" aria-expanded="false">
+              <div class="solo-item-header">
+                <div class="solo-item-title-group">
+                  <span class="solo-item-icon">✨</span>
+                  <div class="solo-item-text">
+                    <span class="solo-item-title">Zen Mode</span>
+                    <span class="solo-item-subtitle">Symmetry mirror drawing sandbox</span>
+                  </div>
+                </div>
+                <div class="solo-item-meta">
+                  <span class="mode-tag mode-tag-active">Active</span>
+                  <span class="solo-chevron" aria-hidden="true">▼</span>
+                </div>
+              </div>
+
+              <!-- Extended container: shows specifically how Zen Mode works -->
+              <div class="solo-item-extended" id="zenModeExtended">
+                <div class="zen-mode-explainer">
+                  <p class="zen-explainer-summary">
+                    Draw with real-time symmetry mirrors. Every brushstroke is dynamically duplicated and reflected across center axes with zero timers and no pressure.
+                  </p>
+                  <div class="zen-mechanics-list">
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">🪞</span>
+                      <div class="mech-content">
+                        <strong>5 Symmetry Mirrors:</strong> Radial (8-way kaleidoscope), Quad (4 quadrants), Horizontal, and Vertical axis reflection.
+                      </div>
+                    </div>
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">⏳</span>
+                      <div class="mech-content">
+                        <strong>Pure Sandbox Flow:</strong> No rounds, no word guessing, and no scores. Draw at your own pace with unlimited undos.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode 2: Coming Soon -->
+            <div class="solo-picker-item solo-picker-locked" title="Speed Drill - Coming Soon!">
+              <div class="solo-item-header">
+                <div class="solo-item-title-group">
+                  <span class="solo-item-icon">⚡</span>
+                  <div class="solo-item-text">
+                    <span class="solo-item-title">Speed Drill</span>
+                    <span class="solo-item-subtitle">Timed solo sketch challenge</span>
+                  </div>
+                </div>
+                <div class="solo-item-meta">
+                  <div class="mode-lock-overlay-inline">🔒</div>
+                  <span class="mode-tag mode-tag-soon">Coming Soon</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode 3: Coming Soon -->
+            <div class="solo-picker-item solo-picker-locked" title="Daily Prompt - Coming Soon!">
+              <div class="solo-item-header">
+                <div class="solo-item-title-group">
+                  <span class="solo-item-icon">📅</span>
+                  <div class="solo-item-text">
+                    <span class="solo-item-title">Daily Prompt</span>
+                    <span class="solo-item-subtitle">New community theme each day</span>
+                  </div>
+                </div>
+                <div class="solo-item-meta">
+                  <div class="mode-lock-overlay-inline">🔒</div>
+                  <span class="mode-tag mode-tag-soon">Coming Soon</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Start Action (where 'play zen mode' button was) -->
+          <div class="zen-card-action-wrap">
+            <button type="button" class="btn-landing-zen" id="btnPlayZenMode">
+              <span class="landing-btn-icon">✨</span>
+              <span class="landing-btn-text">Start</span>
+              <span class="join-arrow">→</span>
+            </button>
+            <span class="zen-subnote">100% Client-Side &bull; No Sign-in &bull; Zero Pressure</span>
           </div>
         </div>
 
@@ -170,12 +268,12 @@
                     <h3 class="post-it-title">Patch Notes &amp; Updates</h3>
                     <div class="post-it-content">
                       <ul class="post-it-list">
+                        <li><strong>Single Player Mode:</strong> Play solo anytime! First game is <strong>Zen Mode</strong> — relax and draw with symmetry mirrors, no timers, and zero pressure!</li>
                         <li><strong>Impostor Mode:</strong> One secret faker doesn't know the word! Take turns sketching, vote on suspects, or guess the word to steal the win!</li>
-                        <li><strong>Mobile Optimization:</strong> Full responsive smartphone layout, quick-switch tabs, and top-left collapsible drawing toolkit!</li>
-                        <li><strong>Host Game Controls:</strong> Host can switch modes mid-match with safety confirmation alerts, plus start or stop games anytime.</li>
-                        <li><strong>Huge Word Bank:</strong> 100+ fresh categorized words &amp; taboo traps so rounds never feel repetitive!</li>
+                        <li><strong>Undo Button &amp; Export:</strong> Fix any slip-ups instantly with the new canvas undo button, or save your artwork straight to your device!</li>
+                        <li><strong>Mobile &amp; Word Bank:</strong> Full smartphone layout with quick tabs, plus 100+ fresh categorized words &amp; taboo traps!</li>
                       </ul>
-                      <div class="post-it-signature">— Dev Scribbles &bull; v2.6 ✏️</div>
+                      <div class="post-it-signature">— Dev Scribbles &bull; v2.7 ✏️</div>
                     </div>
                   </div>
                 </div>
@@ -260,6 +358,165 @@
           <span>Details</span>
           <span class="privacy-btn-arrow">ℹ️</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Zen Mode Single-Player Sandbox (Symmetry Mirrors & Radial Mandala Studio)
+       ========================================================================= -->
+  <div class="zen-mode-view hidden" id="zenModeView" style="display: none;">
+    <!-- Zen Mode Header -->
+    <header class="zen-header">
+      <div class="zen-header-left">
+        <img src="assets/transcribble-logo.png" alt="Transcribble" class="zen-header-logo" title="Transcribble - Click to return Home">
+        <div class="zen-title-group">
+          <div class="zen-badge-wrap">
+            <span class="zen-badge">🧘 ZEN STUDIO</span>
+            <span class="zen-badge-pill">Single Player</span>
+          </div>
+          <span class="zen-subtitle">Symmetry Mirrors &amp; Mandala Sandbox</span>
+        </div>
+      </div>
+
+      <div class="zen-header-center">
+        <!-- Live Symmetry Mode Indicator Pill -->
+        <div class="zen-symmetry-pill" id="zenSymmetryPill" title="Current Symmetry Mirror">
+          <span class="zen-sym-icon" id="zenSymIcon">❄️</span>
+          <span class="zen-sym-name" id="zenSymName">Kaleidoscope (8-Way)</span>
+        </div>
+      </div>
+
+      <div class="zen-header-right">
+        <!-- Action Buttons -->
+        <button type="button" class="btn-zen-action" id="btnZenUndo" title="Undo last stroke (Ctrl+Z)">
+          <span class="zen-action-icon">↩️</span>
+          <span class="zen-action-label">Undo</span>
+        </button>
+
+        <button type="button" class="btn-zen-action" id="btnZenToggleGuides" title="Toggle Symmetry Guides">
+          <span class="zen-action-icon">📐</span>
+          <span class="zen-action-label" id="zenGuidesLabel">Guides: On</span>
+        </button>
+
+        <button type="button" class="btn-zen-action" id="btnZenClear" title="Clear Canvas">
+          <span class="zen-action-icon">🗑️</span>
+          <span class="zen-action-label">Clear</span>
+        </button>
+
+        <button type="button" class="btn-zen-action btn-zen-export" id="btnZenExport" title="Export High-Res PNG">
+          <span class="zen-action-icon">💾</span>
+          <span class="zen-action-label">Export Image</span>
+        </button>
+
+        <button type="button" class="btn-zen-action btn-zen-exit" id="btnZenExit" title="Return to Home Screen">
+          <span class="zen-action-icon">🏠</span>
+          <span class="zen-action-label">Back to Home</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Zen Canvas Workstation -->
+    <div class="zen-workstation">
+      <!-- Main Canvas Container -->
+      <div class="zen-canvas-container" id="zenCanvasContainer">
+        <!-- Background guide overlay canvas for dotted symmetry axes -->
+        <canvas class="zen-guide-canvas" id="zenGuideCanvas" width="1200" height="800"></canvas>
+        <!-- The actual drawing canvas -->
+        <canvas class="zen-drawing-canvas" id="zenDrawingCanvas" width="1200" height="800"></canvas>
+      </div>
+
+      <!-- Zen Floating / Docked Toolbar -->
+      <div class="zen-toolbar" id="zenToolbar">
+        <!-- 1. Symmetry Selector Group -->
+        <div class="zen-tool-group zen-symmetry-group">
+          <span class="zen-group-label">SYMMETRY MIRROR</span>
+          <div class="zen-sym-buttons" id="zenSymButtons">
+            <button type="button" class="zen-sym-btn" data-sym="none" title="Standard Freehand (No Mirror)">
+              <span class="sym-btn-icon">✏️</span>
+              <span class="sym-btn-text">None</span>
+            </button>
+            <button type="button" class="zen-sym-btn" data-sym="horizontal" title="Horizontal Mirror (Left &harr; Right)">
+              <span class="sym-btn-icon">↔️</span>
+              <span class="sym-btn-text">Horizontal</span>
+            </button>
+            <button type="button" class="zen-sym-btn" data-sym="vertical" title="Vertical Mirror (Top &varr; Bottom)">
+              <span class="sym-btn-icon">↕️</span>
+              <span class="sym-btn-text">Vertical</span>
+            </button>
+            <button type="button" class="zen-sym-btn" data-sym="quad" title="Quad Mirror (4 Quadrants)">
+              <span class="sym-btn-icon">✛</span>
+              <span class="sym-btn-text">Quad</span>
+            </button>
+            <button type="button" class="zen-sym-btn active" data-sym="kaleidoscope" title="Kaleidoscope (8-Way Radial Symmetry)">
+              <span class="sym-btn-icon">❄️</span>
+              <span class="sym-btn-text">Kaleidoscope</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="zen-toolbar-divider"></div>
+
+        <!-- 2. Tool Mode (Brush vs Eraser) -->
+        <div class="zen-tool-group zen-tool-types">
+          <span class="zen-group-label">TOOL</span>
+          <div class="zen-type-buttons">
+            <button type="button" class="zen-type-btn active" id="btnZenBrush" data-tool="brush" title="Drawing Brush">
+              <span class="type-icon">🖌️</span>
+              <span>Brush</span>
+            </button>
+            <button type="button" class="zen-type-btn" id="btnZenEraser" data-tool="eraser" title="Eraser">
+              <span class="type-icon">🧼</span>
+              <span>Eraser</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="zen-toolbar-divider"></div>
+
+        <!-- 3. Size Slider & Quick Presets -->
+        <div class="zen-tool-group zen-size-group">
+          <div class="zen-size-header">
+            <span class="zen-group-label">BRUSH SIZE</span>
+            <span class="zen-size-badge" id="zenSizeBadge">8px</span>
+          </div>
+          <div class="zen-size-controls">
+            <input type="range" class="zen-size-slider" id="zenSizeSlider" min="2" max="48" value="8" />
+            <div class="zen-size-presets">
+              <button type="button" class="zen-size-preset-dot" data-size="3" title="Fine (3px)">•</button>
+              <button type="button" class="zen-size-preset-dot active" data-size="8" title="Medium (8px)">●</button>
+              <button type="button" class="zen-size-preset-dot" data-size="16" title="Bold (16px)">⬤</button>
+              <button type="button" class="zen-size-preset-dot" data-size="28" title="Chunky (28px)">⬤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="zen-toolbar-divider"></div>
+
+        <!-- 4. Curated Soft Pastel Art Palette -->
+        <div class="zen-tool-group zen-palette-group">
+          <span class="zen-group-label">PALETTE</span>
+          <div class="zen-swatches" id="zenPaletteSwatches">
+            <!-- Charcoal & White -->
+            <button type="button" class="zen-swatch active" data-color="#1E1E1E" style="--swatch-color: #1E1E1E;" title="Charcoal Ink"></button>
+            <button type="button" class="zen-swatch" data-color="#FFFFFF" style="--swatch-color: #FFFFFF;" title="Pure White"></button>
+            <!-- Soft Calming Pastels -->
+            <button type="button" class="zen-swatch" data-color="#FFB5B5" style="--swatch-color: #FFB5B5;" title="Pastel Rose"></button>
+            <button type="button" class="zen-swatch" data-color="#FFD8A8" style="--swatch-color: #FFD8A8;" title="Pastel Apricot"></button>
+            <button type="button" class="zen-swatch" data-color="#FFF3BF" style="--swatch-color: #FFF3BF;" title="Pastel Butter"></button>
+            <button type="button" class="zen-swatch" data-color="#C3FAE8" style="--swatch-color: #C3FAE8;" title="Pastel Mint"></button>
+            <button type="button" class="zen-swatch" data-color="#A5D8FF" style="--swatch-color: #A5D8FF;" title="Pastel Sky"></button>
+            <button type="button" class="zen-swatch" data-color="#D0BFFF" style="--swatch-color: #D0BFFF;" title="Pastel Lavender"></button>
+            <button type="button" class="zen-swatch" data-color="#FCC2D7" style="--swatch-color: #FCC2D7;" title="Pastel Lilac"></button>
+            <button type="button" class="zen-swatch" data-color="#868E96" style="--swatch-color: #868E96;" title="Warm Slate"></button>
+            
+            <!-- Custom Color Picker -->
+            <label class="zen-color-picker-label" title="Custom Color">
+              <input type="color" id="zenCustomColorPicker" value="#6366F1" class="zen-color-picker-input" />
+              <span class="zen-picker-icon">🎨</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -834,6 +1091,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="impostorClient.js?v=2.6"></script>
+  <script src="js/zenMode.js?v=2.6"></script>
   <script src="client.js?v=2.6"></script>
 </body>
 

@@ -1,37 +1,34 @@
-Act as a senior full-stack web developer. We are adding a completely new game mode to our Node.js and Socket.io drawing game called "Impostor Mode". 
+Act as a senior frontend web developer. We need to restructure the landing page to support single-player options and build a standalone "Zen Mode" drawing sandbox. 
 
-In this mode, players share a single canvas and take sequential turns drawing to hint at a secret word, but one player is the Impostor and does not know the word.
+Please implement the following updates across index.html, style.css, and client.js:
 
-Please implement the following complex state machine in server.js and the corresponding UI updates in client.js:
+1. Home Screen Three-Block Layout (index.html & style.css)
+* Restructure the home screen into a responsive three-block layout (or clean card container grid):
+  - Block 1 (Multiplayer): The existing room creation, room code entry, and matchmaking card.
+  - Block 2 (Single Player): A new card introducing solo play. Feature a prominent "Zen Mode" launch button with a short description: "Relax and draw with symmetry mirrors. No timers, no rules, pure creation."
+  - Block 3 (About / Info): The existing carousel card containing About, Patch Notes, and How to Play.
+* Ensure all three cards share the same visual design language: thick black borders, rounded corners, pastel background accents, and neo-brutalist offset drop shadows.
+* Make the layout wrap cleanly on mobile and tablet screens.
 
-1. Role Assignment & Initialization (server.js)
-* When the game starts, randomly assign one player as the "Impostor". The rest are "Regulars".
-* Emit the secret word to all Regulars. 
-* Emit a specific payload to the Impostor that hides the word and displays: "You are the impostor, try to blend in with the players."
-* Initialize a hidden scoring system for all players.
+2. Screen Transition Management (client.js)
+* Implement clean view switching between the Home Screen and the Zen Mode Canvas.
+* When the user clicks "Play Zen Mode" in Block 2, hide the Home Screen containers and display the Zen Mode interface.
+* Add an exit button ("Back to Home") in the Zen Mode header that smoothly returns the user to the landing screen without refreshing the page.
 
-2. Turn-Based Drawing Loop (server.js & client.js)
-* Implement a turn queue. Only the "active" player has write access to the HTML5 canvas. All other clients must have their canvas locked (read-only).
-* Give the active player exactly 10 seconds to draw. Display a synchronized countdown timer on all clients.
-* When the 10 seconds expire, immediately pass canvas control to the next player in the queue.
-* Track "rotations" (when every active player has taken one turn). The first drawing phase lasts for exactly 2 full rotations. 
+3. Zen Mode Symmetry Engine (client.js)
+* Zen Mode runs entirely client-side on an HTML5 canvas (no Socket.io traffic needed).
+* Implement multiple symmetry modes that players can toggle via a toolbar:
+  - None: Standard freehand drawing.
+  - Horizontal Mirror: Reflects strokes across the vertical center line (left to right).
+  - Vertical Mirror: Reflects strokes across the horizontal center line (top to bottom).
+  - Quad Mirror: Reflects strokes across both horizontal and vertical axes simultaneously (4 quadrants).
+  - Kaleidoscope (8-Way): Reflects and rotates strokes across 8 radial segments centered on the canvas.
+* Mathematical stroke mirroring: When a pointerdown or pointermove event fires at coordinate (x, y), compute and render the mirrored coordinates relative to the canvas center (canvas.width / 2, canvas.height / 2) in real time.
 
-3. Voting Phase (server.js & client.js)
-* After the required drawing rotations, trigger a 'VOTING_PHASE' event.
-* On the client, overlay a Voting UI showing all active players. Allow users to cast one vote.
-* On the server, tally the votes after a set time limit. 
-* If a player receives a strict majority, they are eliminated from the active queue.
+4. Zen Mode Toolbar & Aesthetics (index.html, style.css, client.js)
+* Keep the interface peaceful and uncluttered.
+* Include a symmetry toggle selector, brush size slider, eraser tool, and a clear canvas button.
+* Provide a curated color palette with soft, calming pastel tones alongside default black and white.
+* Add an "Export Image" button that calls canvas.toDataURL('image/png') so players can download their geometric artwork locally.
 
-4. Elimination & Progressive Rounds (server.js)
-* If the eliminated player IS the Impostor: The game ends, Regulars win.
-* If the eliminated player is NOT the Impostor: Apply a penalty to the Regulars' hidden scores, and award bonus survival points to the Impostor. 
-* If 3 non-impostor players are eliminated total, the game ends, Impostor wins.
-* If the game continues, start a new drawing phase with the remaining players. This subsequent drawing phase only lasts for 1 rotation before the next vote.
-
-5. Scoring Logic (server.js)
-* Ensure all points remain hidden in the backend state until the game concludes.
-* Impostor scoring: Scales up based on how many voting rounds they survive.
-* Regular player scoring: Award partial points if a player voted for the Impostor, even if the group majority eliminated the wrong person.
-* At game over, broadcast the 'GAME_OVER' event with the final revealed scores and the Impostor's identity to update a leaderboard UI.
-
-Structure your response by providing the new state machine logic for server.js (handling turns, timers, and voting tallies) and the client.js logic for toggling canvas interactivity and rendering the voting overlay.
+Structure your response with the complete HTML markup for the three-block home layout, the updated CSS styling for the cards and Zen Mode canvas view, and the vanilla JavaScript logic powering the view switching and symmetry stroke calculations.

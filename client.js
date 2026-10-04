@@ -20,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (typeof window.ZenModeManager === 'function') {
+    window.zenModeManager = new window.ZenModeManager();
+    window.zenModeManager.init();
+  }
+
   let currentUser = {
     id: null,
     username: 'Player',
@@ -609,10 +614,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
 
     // Reveal landing overlay and hide room page
+    if (window.zenModeManager) {
+      window.zenModeManager.close();
+    }
+    document.body.classList.remove('zen-mode-active');
     if (landingOverlay) {
       landingOverlay.classList.remove('hidden');
     }
     if (appContainer) {
+      appContainer.classList.remove('hidden');
+      appContainer.style.display = '';
       appContainer.style.visibility = 'hidden';
       appContainer.style.opacity = '0';
       appContainer.style.pointerEvents = 'none';
@@ -2481,13 +2492,30 @@ document.addEventListener('DOMContentLoaded', () => {
       currentRoomCode.textContent = currentRoomId;
     }
 
+    if (window.zenModeManager) {
+      window.zenModeManager.close();
+    }
+    document.body.classList.remove('zen-mode-active');
     if (landingOverlay) {
       landingOverlay.classList.add('hidden');
     }
     if (appContainer) {
+      appContainer.classList.remove('hidden');
+      appContainer.style.display = '';
       appContainer.style.visibility = 'visible';
       appContainer.style.opacity = '1';
       appContainer.style.pointerEvents = 'auto';
+    }
+
+    if (canvas) {
+      if (canvas.width !== CANVAS_WIDTH || canvas.height !== CANVAS_HEIGHT) {
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+      }
+      fillCanvasWhite();
+    }
+    if (canvasContainer) {
+      canvasContainer.style.display = 'block';
     }
 
     if (data.roomId) {

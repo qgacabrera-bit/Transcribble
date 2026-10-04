@@ -1,0 +1,529 @@
+/* ==========================================================================
+   Zen Mode Symmetry Studio & Single-Player Sandbox Styles
+   ========================================================================== */
+
+/* Fullscreen Zen Mode Overlay View */
+.zen-mode-view {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 1200;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 12px 10px 12px;
+  gap: 8px;
+  box-sizing: border-box;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.zen-mode-view.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide background scratchpad and app-container while Zen Mode is active */
+body.zen-mode-active .app-container,
+body.zen-mode-active .bg-doodle-hint {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* ==========================================================================
+   Zen Header
+   ========================================================================== */
+.zen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.zen-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zen-header-logo {
+  height: 38px;
+  width: auto;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.zen-header-logo:hover {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+.zen-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.zen-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zen-badge {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  letter-spacing: 0.04em;
+}
+
+.zen-badge-pill {
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #6366F1;
+  background: #EEF2FF;
+  border: 1.5px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  text-transform: uppercase;
+}
+
+.zen-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  color: var(--pencil-lead);
+  font-weight: 600;
+}
+
+/* Center Symmetry Pill */
+.zen-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zen-symmetry-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FEF3C7;
+  border: 2px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-heading);
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #92400E;
+}
+
+.zen-sym-icon {
+  font-size: 1.1rem;
+}
+
+/* Header Right Actions */
+.zen-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-zen-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-paper);
+  border: 2px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-zen-action:hover {
+  background: #F3F4F6;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--ink-pure);
+}
+
+.btn-zen-action:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--ink-pure);
+}
+
+.btn-zen-export {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.btn-zen-export:hover {
+  background: #A7F3D0;
+}
+
+.btn-zen-exit {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.btn-zen-exit:hover {
+  background: #FECACA;
+}
+
+/* ==========================================================================
+   Zen Workstation & Canvas Container
+   ========================================================================== */
+.zen-workstation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.zen-canvas-container {
+  position: relative;
+  width: 100%;
+  max-width: 1160px;
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: 1200 / 800;
+  background: #FFFFFF;
+  border: var(--line-thick);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.zen-guide-canvas,
+.zen-drawing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.zen-guide-canvas {
+  pointer-events: none;
+  z-index: 1;
+}
+
+.zen-drawing-canvas {
+  z-index: 2;
+  cursor: crosshair;
+}
+
+/* ==========================================================================
+   Zen Toolbar (Docked Bottom Controls)
+   ========================================================================== */
+.zen-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 1160px;
+  flex-shrink: 0;
+}
+
+.zen-toolbar-divider {
+  width: 2px;
+  height: 32px;
+  background: #E5E7EB;
+  border-radius: 2px;
+}
+
+.zen-tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zen-group-label {
+  font-family: var(--font-heading);
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--pencil-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Symmetry Selector Buttons */
+.zen-sym-buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.zen-sym-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  cursor: pointer;
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 1px 1px 0px var(--ink-pure);
+}
+
+.zen-sym-btn:hover {
+  background: #FEF3C7;
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0px var(--ink-pure);
+}
+
+.zen-sym-btn.active {
+  background: #6366F1;
+  color: #FFFFFF;
+  border-color: var(--ink-pure);
+  box-shadow: 2px 2px 0px var(--ink-pure);
+  transform: translate(-1px, -1px);
+}
+
+/* Tool Mode Selector (Brush vs Eraser) */
+.zen-type-buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.zen-type-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  box-shadow: 1px 1px 0px var(--ink-pure);
+}
+
+.zen-type-btn:hover {
+  background: #F3F4F6;
+  transform: translate(-1px, -1px);
+}
+
+.zen-type-btn.active {
+  background: #10B981;
+  color: #FFFFFF;
+  box-shadow: 2px 2px 0px var(--ink-pure);
+}
+
+/* Brush Size Slider & Presets */
+.zen-size-group {
+  min-width: 140px;
+}
+
+.zen-size-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.zen-size-badge {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  background: var(--bg-subtle);
+  border: 1px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 0 6px;
+}
+
+.zen-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zen-size-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px;
+  height: 6px;
+  background: #E5E7EB;
+  border-radius: 4px;
+  border: 1px solid var(--ink-pure);
+  outline: none;
+}
+
+.zen-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink-pure);
+  cursor: pointer;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.4);
+}
+
+.zen-size-presets {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.zen-size-preset-dot {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--pencil-medium);
+  padding: 2px;
+  transition: transform 0.1s ease, color 0.1s ease;
+}
+
+.zen-size-preset-dot:hover,
+.zen-size-preset-dot.active {
+  color: var(--ink-pure);
+  transform: scale(1.3);
+}
+
+/* Palette Swatches */
+.zen-swatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.zen-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--swatch-color);
+  border: 1.5px solid var(--ink-pure);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.zen-swatch:hover {
+  transform: scale(1.25);
+  box-shadow: 2px 2px 0px var(--ink-pure);
+  z-index: 2;
+}
+
+.zen-swatch.active {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3.5px var(--ink-pure);
+  z-index: 3;
+}
+
+/* Custom Color Picker Input */
+.zen-color-picker-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-pure);
+  background: #FFFFFF;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.zen-color-picker-label:hover {
+  transform: scale(1.25);
+}
+
+.zen-color-picker-input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.zen-picker-icon {
+  font-size: 0.72rem;
+  pointer-events: none;
+}
+
+/* Responsive Zen Mode */
+@media (max-width: 900px) {
+  .zen-toolbar {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .zen-toolbar-divider {
+    display: none;
+  }
+  .zen-sym-btn .sym-btn-text {
+    display: none;
+  }
+  .zen-sym-btn {
+    padding: 5px 8px;
+    font-size: 0.95rem;
+  }
+  .zen-subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .zen-header {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .btn-zen-action .zen-action-label {
+    display: none;
+  }
+  .btn-zen-action {
+    padding: 5px 8px;
+    font-size: 0.95rem;
+  }
+  .zen-symmetry-pill {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+  }
+}
