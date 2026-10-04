@@ -21,14 +21,16 @@ class ZenModeManager {
     this.currentSize = 8;
     this.currentSymmetry = 'kaleidoscope'; // 'none' | 'horizontal' | 'vertical' | 'quad' | 'kaleidoscope'
     this.showGuides = true;
+    this.smoothingEnabled = true; // Quadratic Bezier smoothing
+    this.strokePoints = [];
 
     // Undo stack (stores ImageData)
     this.undoStack = [];
     this.maxUndoSteps = 25;
 
     // Dimensions
-    this.CANVAS_WIDTH = 1200;
-    this.CANVAS_HEIGHT = 800;
+    this.CANVAS_WIDTH = 1000;
+    this.CANVAS_HEIGHT = 1000;
 
     // Symmetry metadata for UI
     this.symmetryInfo = {
@@ -235,6 +237,8 @@ class ZenModeManager {
     this.showGuides = !this.showGuides;
     const label = document.getElementById('zenGuidesLabel');
     if (label) label.textContent = this.showGuides ? 'Guides: On' : 'Guides: Off';
+    const btn = document.getElementById('btnZenToggleGuides');
+    if (btn) btn.classList.toggle('active', this.showGuides);
     this.drawGuides();
   }
 
@@ -247,61 +251,84 @@ class ZenModeManager {
     const cy = H / 2;
 
     gctx.clearRect(0, 0, W, H);
-    if (!this.showGuides || this.currentSymmetry === 'none') return;
+    if (!this.showGuides) return;
 
     gctx.save();
-    gctx.strokeStyle = 'rgba(99, 102, 241, 0.35)'; // Gentle indigo dashed lines
-    gctx.lineWidth = 1.5;
-    gctx.setLineDash([6, 6]);
 
-    // Draw axes depending on symmetry mode
-    if (this.currentSymmetry === 'horizontal' || this.currentSymmetry === 'quad' || this.currentSymmetry === 'kaleidoscope') {
-      // Vertical Centerline (reflects Left to Right)
-      gctx.beginPath();
-      gctx.moveTo(cx, 0);
-      gctx.lineTo(cx, H);
-      gctx.stroke();
-    }
+    // 1. Visible Subtle Canvas Background Grid Lines
+    const gridSize = 60; // 60px grid cells (20 columns x 13.3 rows)
+    gctx.strokeStyle = 'rgba(99, 102, 241, 0.12)'; // Soft indigo grid
+    gctx.lineWidth = 1;
+    gctx.setLineDash([2, 4]);
 
-    if (this.currentSymmetry === 'vertical' || this.currentSymmetry === 'quad' || this.currentSymmetry === 'kaleidoscope') {
-      // Horizontal Centerline (reflects Top to Bottom)
-      gctx.beginPath();
-      gctx.moveTo(0, cy);
-      gctx.lineTo(W, cy);
-      gctx.stroke();
-    }
-
-    if (this.currentSymmetry === 'kaleidoscope') {
-      // Diagonal lines through center
-      // Diagonal 1: (cx - R, cy - R) to (cx + R, cy + R)
-      const diagSpan = Math.max(W, H);
-      gctx.beginPath();
-      gctx.moveTo(cx - diagSpan, cy - diagSpan);
-      gctx.lineTo(cx + diagSpan, cy + diagSpan);
-      gctx.stroke();
-
-      // Diagonal 2: (cx - R, cy + R) to (cx + R, cy - R)
-      gctx.beginPath();
-      gctx.moveTo(cx - diagSpan, cy + diagSpan);
-      gctx.lineTo(cx + diagSpan, cy - diagSpan);
-      gctx.stroke();
-
-      // Faint concentric circle guidelines for radial orientation
-      gctx.setLineDash([4, 8]);
-      gctx.strokeStyle = 'rgba(99, 102, 241, 0.18)';
-      [100, 200, 320].forEach(r => {
-        gctx.beginPath();
-        gctx.arc(cx, cy, r, 0, Math.PI * 2);
-        gctx.stroke();
-      });
-    }
-
-    // Center focal point dot
-    gctx.setLineDash([]);
-    gctx.fillStyle = 'rgba(99, 102, 241, 0.7)';
     gctx.beginPath();
-    gctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
-    gctx.fill();
+    // Vertical grid lines aligned to center
+    for (let x = cx % gridSize; x < W; x += gridSize) {
+      gctx.moveTo(x, 0);
+      gctx.lineTo(x, H);
+    }
+    // Horizontal grid lines aligned to center
+    for (let y = cy % gridSize; y < H; y += gridSize) {
+      gctx.moveTo(0, y);
+      gctx.lineTo(W, y);
+    }
+    gctx.stroke();
+
+    // 2. Symmetry Axes & Concentric Guidelines
+    if (this.currentSymmetry !== 'none') {
+      gctx.strokeStyle = 'rgba(79, 70, 229, 0.45)'; // High-visibility indigo
+      gctx.lineWidth = 1.5;
+      gctx.setLineDash([6, 6]);
+
+      // Vertical Centerline (reflects Left to Right)
+      if (this.currentSymmetry === 'horizontal' || this.currentSymmetry === 'quad' || this.currentSymmetry === 'kaleidoscope') {
+        gctx.beginPath();
+        gctx.moveTo(cx, 0);
+        gctx.lineTo(cx, H);
+        gctx.stroke();
+      }
+
+      // Horizontal Centerline (reflects Top to Bottom)
+      if (this.currentSymmetry === 'vertical' || this.currentSymmetry === 'quad' || this.currentSymmetry === 'kaleidoscope') {
+        gctx.beginPath();
+        gctx.moveTo(0, cy);
+        gctx.lineTo(W, cy);
+        gctx.stroke();
+      }
+
+      // Diagonals for Kaleidoscope 8-Way Symmetry
+      if (this.currentSymmetry === 'kaleidoscope') {
+        const diagSpan = Math.max(W, H);
+        gctx.beginPath();
+        gctx.moveTo(cx - diagSpan, cy - diagSpan);
+        gctx.lineTo(cx + diagSpan, cy + diagSpan);
+        gctx.moveTo(cx - diagSpan, cy + diagSpan);
+        gctx.lineTo(cx + diagSpan, cy - diagSpan);
+        gctx.stroke();
+
+        // Concentric radial alignment circles
+        gctx.setLineDash([4, 8]);
+        gctx.strokeStyle = 'rgba(79, 70, 229, 0.22)';
+        [100, 200, 320, 440].forEach(r => {
+          gctx.beginPath();
+          gctx.arc(cx, cy, r, 0, Math.PI * 2);
+          gctx.stroke();
+        });
+      }
+
+      // Center focal point dot with white outline
+      gctx.setLineDash([]);
+      gctx.fillStyle = 'rgba(79, 70, 229, 0.9)';
+      gctx.beginPath();
+      gctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+      gctx.fill();
+
+      gctx.strokeStyle = '#FFFFFF';
+      gctx.lineWidth = 1.5;
+      gctx.beginPath();
+      gctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+      gctx.stroke();
+    }
 
     gctx.restore();
   }
@@ -434,6 +461,52 @@ class ZenModeManager {
     this.ctx.restore();
   }
 
+  drawSymmetryBezier(startX, startY, ctrlX, ctrlY, endX, endY, color, size, isEraser) {
+    if (!this.ctx) return;
+    const startPts = this.getSymmetryPoints(startX, startY);
+    const ctrlPts = this.getSymmetryPoints(ctrlX, ctrlY);
+    const endPts = this.getSymmetryPoints(endX, endY);
+
+    this.ctx.save();
+    this.ctx.strokeStyle = isEraser ? '#FFFFFF' : color;
+    this.ctx.lineWidth = size;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+
+    for (let i = 0; i < startPts.length; i++) {
+      const pStart = startPts[i];
+      const pCtrl = ctrlPts[i];
+      const pEnd = endPts[i];
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(pStart.x, pStart.y);
+      this.ctx.quadraticCurveTo(pCtrl.x, pCtrl.y, pEnd.x, pEnd.y);
+      this.ctx.stroke();
+    }
+
+    this.ctx.restore();
+  }
+
+  toggleSmoothing() {
+    this.smoothingEnabled = !this.smoothingEnabled;
+    const label = document.getElementById('zenSmoothingLabel');
+    if (label) {
+      label.textContent = this.smoothingEnabled ? 'Smooth: On' : 'Smooth: Off';
+    }
+    const btn = document.getElementById('btnZenToggleSmoothing');
+    if (btn) {
+      btn.classList.toggle('active', this.smoothingEnabled);
+    }
+    if (typeof window.showToast === 'function') {
+      window.showToast(
+        this.smoothingEnabled ? 'Curve Smoothing: Enabled' : 'Curve Smoothing: Disabled',
+        'info',
+        '〰️',
+        1600
+      );
+    }
+  }
+
   getCoords(e) {
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
@@ -469,6 +542,14 @@ class ZenModeManager {
 
       const isEraser = (this.currentTool === 'eraser');
       this.drawSymmetryDot(this.lastX, this.lastY, this.currentColor, this.currentSize, isEraser);
+
+      if (this.smoothingEnabled) {
+        // Initialize smoothing points with start coordinate
+        this.strokePoints = [
+          { x: coords.x, y: coords.y },
+          { x: coords.x, y: coords.y }
+        ];
+      }
     });
 
     this.canvas.addEventListener('pointermove', (e) => {
@@ -479,14 +560,64 @@ class ZenModeManager {
       const coords = this.getCoords(e);
       const isEraser = (this.currentTool === 'eraser');
 
-      this.drawSymmetryLine(this.lastX, this.lastY, coords.x, coords.y, this.currentColor, this.currentSize, isEraser);
-      this.lastX = coords.x;
-      this.lastY = coords.y;
+      if (!this.smoothingEnabled) {
+        // Direct linear segments
+        this.drawSymmetryLine(this.lastX, this.lastY, coords.x, coords.y, this.currentColor, this.currentSize, isEraser);
+        this.lastX = coords.x;
+        this.lastY = coords.y;
+      } else {
+        // Quadratic Bezier smoothing:
+        this.strokePoints.push({ x: coords.x, y: coords.y });
+        const len = this.strokePoints.length;
+        const p0 = this.strokePoints[len - 3];
+        const p1 = this.strokePoints[len - 2];
+        const p2 = this.strokePoints[len - 1];
+
+        // Midpoints form smooth join vertices
+        const midStart = {
+          x: (p0.x + p1.x) / 2,
+          y: (p0.y + p1.y) / 2
+        };
+        const midEnd = {
+          x: (p1.x + p2.x) / 2,
+          y: (p1.y + p2.y) / 2
+        };
+
+        this.drawSymmetryBezier(
+          midStart.x, midStart.y,
+          p1.x, p1.y,
+          midEnd.x, midEnd.y,
+          this.currentColor, this.currentSize, isEraser
+        );
+
+        this.lastX = coords.x;
+        this.lastY = coords.y;
+      }
     });
 
     const stopDrawing = (e) => {
       if (!this.isDrawing) return;
       this.isDrawing = false;
+
+      // Finish tail of smoothed stroke
+      if (this.smoothingEnabled && this.hasMoved && this.strokePoints.length >= 2) {
+        const len = this.strokePoints.length;
+        const pPrev = this.strokePoints[len - 2];
+        const pLast = this.strokePoints[len - 1];
+        const midStart = {
+          x: (pPrev.x + pLast.x) / 2,
+          y: (pPrev.y + pLast.y) / 2
+        };
+        const isEraser = (this.currentTool === 'eraser');
+        this.drawSymmetryBezier(
+          midStart.x, midStart.y,
+          pLast.x, pLast.y,
+          pLast.x, pLast.y,
+          this.currentColor, this.currentSize, isEraser
+        );
+      }
+      this.strokePoints = [];
+
       try {
         if (e && e.pointerId) this.canvas.releasePointerCapture(e.pointerId);
       } catch (err) {}
@@ -516,26 +647,73 @@ class ZenModeManager {
 
   bindUIEvents() {
     // Mode Picker Expand/Collapse Toggle for Zen Mode
+    // Mode Picker Selection & Highlighting
     const soloItemZen = document.getElementById('soloItemZen');
+    const soloItemAcademy = document.getElementById('soloItemAcademy');
+    const btnPlayZenMode = document.getElementById('btnPlayZenMode');
+    const soloStartBtnIcon = document.getElementById('soloStartBtnIcon');
+    const soloStartBtnText = document.getElementById('soloStartBtnText');
+
+    window.selectedSoloMode = window.selectedSoloMode || 'zen';
+
+    const selectSoloMode = (mode) => {
+      window.selectedSoloMode = mode;
+      if (mode === 'zen') {
+        if (soloItemZen) {
+          soloItemZen.classList.add('selected', 'expanded');
+          soloItemZen.setAttribute('aria-expanded', 'true');
+        }
+        if (soloItemAcademy) {
+          soloItemAcademy.classList.remove('selected', 'expanded');
+          soloItemAcademy.setAttribute('aria-expanded', 'false');
+        }
+        if (soloStartBtnIcon) soloStartBtnIcon.textContent = '✨';
+        if (soloStartBtnText) soloStartBtnText.textContent = 'Start';
+      } else if (mode === 'academy') {
+        if (soloItemAcademy) {
+          soloItemAcademy.classList.add('selected', 'expanded');
+          soloItemAcademy.setAttribute('aria-expanded', 'true');
+        }
+        if (soloItemZen) {
+          soloItemZen.classList.remove('selected', 'expanded');
+          soloItemZen.setAttribute('aria-expanded', 'false');
+        }
+        if (soloStartBtnIcon) soloStartBtnIcon.textContent = '🎓';
+        if (soloStartBtnText) soloStartBtnText.textContent = 'Start Academy';
+      }
+    };
+
     if (soloItemZen) {
-      soloItemZen.addEventListener('click', (e) => {
-        soloItemZen.classList.toggle('expanded');
-        const isExp = soloItemZen.classList.contains('expanded');
-        soloItemZen.setAttribute('aria-expanded', isExp ? 'true' : 'false');
-      });
+      soloItemZen.addEventListener('click', () => selectSoloMode('zen'));
       soloItemZen.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          soloItemZen.click();
+          selectSoloMode('zen');
         }
       });
     }
 
+    if (soloItemAcademy) {
+      soloItemAcademy.addEventListener('click', () => selectSoloMode('academy'));
+      soloItemAcademy.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectSoloMode('academy');
+        }
+      });
+    }
+
+    // Initialize initial selection
+    selectSoloMode(window.selectedSoloMode);
+
     // Launch button in Home Screen Block 2
-    const btnPlayZenMode = document.getElementById('btnPlayZenMode');
     if (btnPlayZenMode) {
       btnPlayZenMode.addEventListener('click', () => {
-        this.open();
+        if (window.selectedSoloMode === 'academy' && window.academyModeManager) {
+          window.academyModeManager.open();
+        } else {
+          this.open();
+        }
       });
     }
 
@@ -568,6 +746,14 @@ class ZenModeManager {
     if (btnZenGuides) {
       btnZenGuides.addEventListener('click', () => {
         this.toggleGuides();
+      });
+    }
+
+    // Smoothing Toggle
+    const btnZenSmoothing = document.getElementById('btnZenToggleSmoothing');
+    if (btnZenSmoothing) {
+      btnZenSmoothing.addEventListener('click', () => {
+        this.toggleSmoothing();
       });
     }
 

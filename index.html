@@ -13,6 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@500;600;700;800&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="css/academy.css?v=1.0">
 </head>
 
 <body>
@@ -137,7 +138,7 @@
           <!-- Single Player Mode Picker -->
           <div class="solo-mode-picker" id="soloModePicker">
             <!-- Mode 1: Zen Mode (Top option, expandable on click) -->
-            <div class="solo-picker-item solo-item-zen" id="soloItemZen" tabindex="0" role="button" aria-expanded="false">
+            <div class="solo-picker-item solo-item-zen selected expanded" id="soloItemZen" tabindex="0" role="button" aria-expanded="true">
               <div class="solo-item-header">
                 <div class="solo-item-title-group">
                   <span class="solo-item-icon">✨</span>
@@ -147,7 +148,6 @@
                   </div>
                 </div>
                 <div class="solo-item-meta">
-                  <span class="mode-tag mode-tag-active">Active</span>
                   <span class="solo-chevron" aria-hidden="true">▼</span>
                 </div>
               </div>
@@ -176,19 +176,41 @@
               </div>
             </div>
 
-            <!-- Mode 2: Coming Soon -->
-            <div class="solo-picker-item solo-picker-locked" title="Speed Drill - Coming Soon!">
+            <!-- Mode 2: Academy Mode (Educational Progressive Drawing Stages) -->
+            <div class="solo-picker-item solo-item-academy" id="soloItemAcademy" tabindex="0" role="button" aria-expanded="false">
               <div class="solo-item-header">
                 <div class="solo-item-title-group">
-                  <span class="solo-item-icon">⚡</span>
+                  <span class="solo-item-icon">🎓</span>
                   <div class="solo-item-text">
-                    <span class="solo-item-title">Speed Drill</span>
-                    <span class="solo-item-subtitle">Timed solo sketch challenge</span>
+                    <span class="solo-item-title">Drawing Academy</span>
+                    <span class="solo-item-subtitle">4 progressive stages &amp; accuracy scoring</span>
                   </div>
                 </div>
                 <div class="solo-item-meta">
-                  <div class="mode-lock-overlay-inline">🔒</div>
-                  <span class="mode-tag mode-tag-soon">Coming Soon</span>
+                  <span class="solo-chevron" aria-hidden="true">▼</span>
+                </div>
+              </div>
+
+              <!-- Extended container: shows specifically how Academy Mode works -->
+              <div class="solo-item-extended" id="academyModeExtended">
+                <div class="zen-mode-explainer">
+                  <p class="zen-explainer-summary">
+                    Progress through 4 escalating stages: from direct SVG tracing to side-by-side grid replication and freestyle drawing with pixel-matching accuracy scoring.
+                  </p>
+                  <div class="zen-mechanics-list">
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">📐</span>
+                      <div class="mech-content">
+                        <strong>4 Progression Stages:</strong> Direct Tracing, Grid Overlay, Side-by-Side Split Grid, and Freestyle Studio.
+                      </div>
+                    </div>
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">🎯</span>
+                      <div class="mech-content">
+                        <strong>Pixel Accuracy Scoring:</strong> Submit your sketch to compare pixel overlap against the reference image with a 3-pixel tolerance margin.
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -214,11 +236,10 @@
           <!-- Start Action (where 'play zen mode' button was) -->
           <div class="zen-card-action-wrap">
             <button type="button" class="btn-landing-zen" id="btnPlayZenMode">
-              <span class="landing-btn-icon">✨</span>
-              <span class="landing-btn-text">Start</span>
+              <span class="landing-btn-icon" id="soloStartBtnIcon">✨</span>
+              <span class="landing-btn-text" id="soloStartBtnText">Start</span>
               <span class="join-arrow">→</span>
             </button>
-            <span class="zen-subnote">100% Client-Side &bull; No Sign-in &bull; Zero Pressure</span>
           </div>
         </div>
 
@@ -268,7 +289,8 @@
                     <h3 class="post-it-title">Patch Notes &amp; Updates</h3>
                     <div class="post-it-content">
                       <ul class="post-it-list">
-                        <li><strong>Single Player Mode:</strong> Play solo anytime! First game is <strong>Zen Mode</strong> — relax and draw with symmetry mirrors, no timers, and zero pressure!</li>
+                        <li><strong>Single Player Modes:</strong> Play solo anytime! Enjoy relaxing symmetry in <strong>Zen Mode</strong> or test your skills in the brand new <strong>Drawing Academy</strong>!</li>
+                        <li><strong>Drawing Academy:</strong> Master drawing through 4 escalating tiers with instant pixel accuracy scoring and helpful guides!</li>
                         <li><strong>Impostor Mode:</strong> One secret faker doesn't know the word! Take turns sketching, vote on suspects, or guess the word to steal the win!</li>
                         <li><strong>Undo Button &amp; Export:</strong> Fix any slip-ups instantly with the new canvas undo button, or save your artwork straight to your device!</li>
                         <li><strong>Mobile &amp; Word Bank:</strong> Full smartphone layout with quick tabs, plus 100+ fresh categorized words &amp; taboo traps!</li>
@@ -394,9 +416,14 @@
           <span class="zen-action-label">Undo</span>
         </button>
 
-        <button type="button" class="btn-zen-action" id="btnZenToggleGuides" title="Toggle Symmetry Guides">
+        <button type="button" class="btn-zen-action active" id="btnZenToggleGuides" title="Toggle Symmetry Guides &amp; Grid">
           <span class="zen-action-icon">📐</span>
           <span class="zen-action-label" id="zenGuidesLabel">Guides: On</span>
+        </button>
+
+        <button type="button" class="btn-zen-action active" id="btnZenToggleSmoothing" title="Toggle Curve Smoothing (Quadratic Bezier)">
+          <span class="zen-action-icon">〰️</span>
+          <span class="zen-action-label" id="zenSmoothingLabel">Smooth: On</span>
         </button>
 
         <button type="button" class="btn-zen-action" id="btnZenClear" title="Clear Canvas">
@@ -421,9 +448,9 @@
       <!-- Main Canvas Container -->
       <div class="zen-canvas-container" id="zenCanvasContainer">
         <!-- Background guide overlay canvas for dotted symmetry axes -->
-        <canvas class="zen-guide-canvas" id="zenGuideCanvas" width="1200" height="800"></canvas>
+        <canvas class="zen-guide-canvas" id="zenGuideCanvas" width="1000" height="1000"></canvas>
         <!-- The actual drawing canvas -->
-        <canvas class="zen-drawing-canvas" id="zenDrawingCanvas" width="1200" height="800"></canvas>
+        <canvas class="zen-drawing-canvas" id="zenDrawingCanvas" width="1000" height="1000"></canvas>
       </div>
 
       <!-- Zen Floating / Docked Toolbar -->
@@ -517,6 +544,172 @@
             </label>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Academy Mode Single-Player Educational Studio (Tiers 1-4 Progression Engine)
+       ========================================================================== -->
+  <div class="academy-mode-view hidden" id="academyModeView" style="display: none;">
+    <!-- Academy Header -->
+    <header class="academy-header">
+      <div class="academy-header-left">
+        <img src="assets/transcribble-logo.png" alt="Transcribble" class="academy-header-logo" title="Transcribble - Click to return Home">
+        <div class="academy-title-group">
+          <div class="academy-badge-wrap">
+            <span class="academy-badge">🎓 DRAWING ACADEMY</span>
+          </div>
+          <span class="academy-subtitle" id="academyLevelDesc">Trace directly over the faded reference outline to learn smooth contours.</span>
+        </div>
+      </div>
+
+      <div class="academy-header-center">
+        <button type="button" class="academy-level-nav-btn" id="btnAcademyPrevLevel" title="Previous Level">◀</button>
+        <select class="academy-level-select" id="academyLevelSelect" title="Select Academy Level">
+          <!-- Populated by academyMode.js -->
+        </select>
+        <button type="button" class="academy-level-nav-btn" id="btnAcademyNextLevelHeader" title="Next Level">▶</button>
+        <span class="academy-target-badge" id="academyTargetBadge">Target: 70% Accuracy</span>
+      </div>
+
+      <div class="academy-header-right">
+        <button type="button" class="btn-academy-action btn-academy-submit" id="btnAcademySubmit" title="Submit your drawing for pixel accuracy scoring">
+          <span>✨</span>
+          <span>Submit Drawing</span>
+        </button>
+        <button type="button" class="btn-academy-action" id="btnAcademyUndo" title="Undo last stroke (Ctrl+Z)">
+          <span>↩️</span>
+          <span>Undo</span>
+        </button>
+        <button type="button" class="btn-academy-action" id="btnAcademyClear" title="Clear Canvas">
+          <span>🗑️</span>
+          <span>Clear</span>
+        </button>
+        <button type="button" class="btn-academy-action btn-academy-exit" id="btnAcademyExit" title="Return to Home Screen">
+          <span>🏠</span>
+          <span>Back to Home</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Workstation Area -->
+    <div class="academy-workstation">
+      <!-- Split-Mode Header Labels (Left: Reference Guide, Right: Your Drawing) -->
+      <div class="academy-split-labels" id="academySplitLabels">
+        <span class="academy-split-tag tag-ref">📖 REFERENCE GUIDE</span>
+        <span class="academy-split-tag tag-draw">✏️ YOUR DRAWING (DRAW HERE)</span>
+      </div>
+
+      <!-- Canvas Stage Stack -->
+      <div class="academy-canvas-container" id="academyCanvasContainer">
+        <!-- Layer 1: Reference SVG Canvas -->
+        <canvas class="academy-ref-canvas" id="academyRefCanvas" width="1200" height="800"></canvas>
+        <!-- Layer 2: Grid & Anchor Guide Canvas -->
+        <canvas class="academy-grid-canvas" id="academyGridCanvas" width="1200" height="800"></canvas>
+        <!-- Layer 3: Interactive User Drawing Canvas -->
+        <canvas class="academy-drawing-canvas" id="academyDrawingCanvas" width="1200" height="800"></canvas>
+      </div>
+
+      <!-- Tier 4 Color-Matching Target Bar -->
+      <div class="academy-color-targets-bar" id="academyColorTargetsBar">
+        <span class="color-targets-heading">🎯 PALETTE TARGETS:</span>
+        <div class="color-targets-list" id="academyColorTargetsList">
+          <!-- Populated dynamically in Tier 4 -->
+        </div>
+      </div>
+
+      <!-- Academy Floating / Docked Toolbar -->
+      <div class="academy-toolbar" id="academyToolbar">
+        <!-- Tool Selection -->
+        <div class="academy-tool-group">
+          <span class="academy-group-label">TOOL</span>
+          <button type="button" class="academy-tool-btn active" id="btnAcademyBrush" data-tool="brush" title="Drawing Brush">
+            <span>✏️</span><span>Brush</span>
+          </button>
+          <button type="button" class="academy-tool-btn" id="btnAcademyEraser" data-tool="eraser" title="Eraser">
+            <span>🧹</span><span>Eraser</span>
+          </button>
+        </div>
+
+        <div class="academy-toolbar-divider"></div>
+
+        <!-- Brush Size -->
+        <div class="academy-tool-group">
+          <span class="academy-group-label">SIZE</span>
+          <span class="academy-size-badge" id="academySizeBadge">8px</span>
+          <div class="academy-size-controls">
+            <input type="range" class="academy-size-slider" id="academySizeSlider" min="2" max="40" value="8" />
+            <div class="academy-size-presets">
+              <button type="button" class="academy-size-dot" data-size="3" title="Fine (3px)">•</button>
+              <button type="button" class="academy-size-dot active" data-size="8" title="Medium (8px)">●</button>
+              <button type="button" class="academy-size-dot" data-size="16" title="Bold (16px)">⬤</button>
+              <button type="button" class="academy-size-dot" data-size="28" title="Chunky (28px)">⬤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="academy-toolbar-divider"></div>
+
+        <!-- Palette Swatches -->
+        <div class="academy-tool-group">
+          <span class="academy-group-label">PALETTE</span>
+          <div class="academy-swatches" id="academyPaletteSwatches">
+            <button type="button" class="academy-swatch active" data-color="#1E1E1E" style="--swatch-color: #1E1E1E;" title="Charcoal Ink"></button>
+            <button type="button" class="academy-swatch" data-color="#FFFFFF" style="--swatch-color: #FFFFFF;" title="Pure White"></button>
+            <button type="button" class="academy-swatch" data-color="#FF6B6B" style="--swatch-color: #FF6B6B;" title="Coral Red"></button>
+            <button type="button" class="academy-swatch" data-color="#FFD8A8" style="--swatch-color: #FFD8A8;" title="Pastel Apricot"></button>
+            <button type="button" class="academy-swatch" data-color="#FFF3BF" style="--swatch-color: #FFF3BF;" title="Pastel Butter"></button>
+            <button type="button" class="academy-swatch" data-color="#C3FAE8" style="--swatch-color: #C3FAE8;" title="Pastel Mint"></button>
+            <button type="button" class="academy-swatch" data-color="#51CF66" style="--swatch-color: #51CF66;" title="Forest Green"></button>
+            <button type="button" class="academy-swatch" data-color="#A5D8FF" style="--swatch-color: #A5D8FF;" title="Pastel Sky"></button>
+            <button type="button" class="academy-swatch" data-color="#339AF0" style="--swatch-color: #339AF0;" title="Ocean Blue"></button>
+            <button type="button" class="academy-swatch" data-color="#D0BFFF" style="--swatch-color: #D0BFFF;" title="Pastel Lavender"></button>
+            <button type="button" class="academy-swatch" data-color="#FCC2D7" style="--swatch-color: #FCC2D7;" title="Pastel Lilac"></button>
+            <button type="button" class="academy-swatch" data-color="#868E96" style="--swatch-color: #868E96;" title="Warm Slate"></button>
+
+            <!-- Custom Color Picker -->
+            <label class="academy-color-picker-label" title="Custom Color">
+              <input type="color" id="academyCustomColorPicker" value="#4F46E5" class="academy-color-picker-input" />
+              <span class="academy-picker-icon">🎨</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Academy Evaluation Results Modal -->
+  <div class="academy-result-modal hidden" id="academyResultModal">
+    <div class="academy-result-card">
+      <div class="academy-score-circle">
+        <span class="academy-score-number" id="academyResultScore">85%</span>
+        <span class="academy-score-label">ACCURACY</span>
+        <div class="academy-result-grade" id="academyResultGrade" data-grade="A">A</div>
+      </div>
+
+      <div class="academy-result-badges">
+        <span class="badge-target-pass" id="academyResultTarget">Required: 70%</span>
+      </div>
+
+      <h3 class="academy-result-title" id="academyResultTitle">🎉 Level Mastered!</h3>
+      <p class="academy-result-message" id="academyResultMessage">
+        Terrific precision! Your lines align cleanly with the reference proportions.
+      </p>
+
+      <!-- Tier 4 Color Checklist (if applicable) -->
+      <div class="academy-result-colors" id="academyResultColors" style="display: none;"></div>
+
+      <div class="academy-result-actions">
+        <button type="button" class="btn-modal-action btn-modal-retry" id="btnAcademyRetry">
+          <span>🔄</span><span>Retry</span>
+        </button>
+        <button type="button" class="btn-modal-action btn-modal-next" id="btnAcademyNextLevel">
+          <span>Next Level</span><span>➔</span>
+        </button>
+        <button type="button" class="btn-modal-action btn-modal-exit" id="btnAcademyModalExit">
+          <span>🏠</span><span>Exit</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1092,6 +1285,8 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="impostorClient.js?v=2.6"></script>
   <script src="js/zenMode.js?v=2.6"></script>
+  <script src="js/academyLevels.js?v=1.0"></script>
+  <script src="js/academyMode.js?v=1.0"></script>
   <script src="client.js?v=2.6"></script>
 </body>
 

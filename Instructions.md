@@ -1,34 +1,22 @@
-Act as a senior frontend web developer. We need to restructure the landing page to support single-player options and build a standalone "Zen Mode" drawing sandbox. 
+Act as a senior full-stack web developer. We are adding an "Academy Mode" to our drawing game. This is a single-player educational progression system that teaches users how to draw through escalating difficulty levels using local SVG reference files.
 
-Please implement the following updates across index.html, style.css, and client.js:
+Please implement the following progression engine and accuracy scoring system using HTML5 Canvas and vanilla JavaScript:
 
-1. Home Screen Three-Block Layout (index.html & style.css)
-* Restructure the home screen into a responsive three-block layout (or clean card container grid):
-  - Block 1 (Multiplayer): The existing room creation, room code entry, and matchmaking card.
-  - Block 2 (Single Player): A new card introducing solo play. Feature a prominent "Zen Mode" launch button with a short description: "Relax and draw with symmetry mirrors. No timers, no rules, pure creation."
-  - Block 3 (About / Info): The existing carousel card containing About, Patch Notes, and How to Play.
-* Ensure all three cards share the same visual design language: thick black borders, rounded corners, pastel background accents, and neo-brutalist offset drop shadows.
-* Make the layout wrap cleanly on mobile and tablet screens.
+1. Asset Management & Level Configuration
+* Create a JSON structure to define levels mapping to local files (e.g., `filepath: '/assets/Easy/apple.svg'`). Each level object should contain the filepath, a difficulty tier (1 through 4), and a target accuracy percentage required to pass.
+* Write a `loadSVGToCanvas(filepath, canvasContext)` function. It must create an `Image()` object, set the `src`, and use the `onload` event to execute `ctx.drawImage()`. 
+* Implement scaling logic inside the onload event to calculate the aspect ratio of the SVG, scaling and centering it perfectly within the assigned canvas boundaries without distortion.
 
-2. Screen Transition Management (client.js)
-* Implement clean view switching between the Home Screen and the Zen Mode Canvas.
-* When the user clicks "Play Zen Mode" in Block 2, hide the Home Screen containers and display the Zen Mode interface.
-* Add an exit button ("Back to Home") in the Zen Mode header that smoothly returns the user to the landing screen without refreshing the page.
+2. Progressive Difficulty State Machine
+* Tier 1 (Direct Tracing): The reference SVG is drawn directly onto the center of the user's main canvas at 30% opacity. The user traces over it.
+* Tier 2 (Grid Tracing): Same as Tier 1, but render a rigid 8x8 or 16x16 grid overlay to help the user understand proportions.
+* Tier 3 (Side-by-Side with Grid): The canvas area splits. The reference SVG is rendered on the left side with a grid overlay. The user's drawing area is on the right side with an identical blank grid. Include a small starting dot coordinate on the user's canvas to anchor their first stroke.
+* Tier 4 (Freestyle): The reference SVG is displayed on the left without grids. The user must replicate it entirely freehand on the right side. Include color-matching targets where the user must select specific hex codes from the palette.
 
-3. Zen Mode Symmetry Engine (client.js)
-* Zen Mode runs entirely client-side on an HTML5 canvas (no Socket.io traffic needed).
-* Implement multiple symmetry modes that players can toggle via a toolbar:
-  - None: Standard freehand drawing.
-  - Horizontal Mirror: Reflects strokes across the vertical center line (left to right).
-  - Vertical Mirror: Reflects strokes across the horizontal center line (top to bottom).
-  - Quad Mirror: Reflects strokes across both horizontal and vertical axes simultaneously (4 quadrants).
-  - Kaleidoscope (8-Way): Reflects and rotates strokes across 8 radial segments centered on the canvas.
-* Mathematical stroke mirroring: When a pointerdown or pointermove event fires at coordinate (x, y), compute and render the mirrored coordinates relative to the canvas center (canvas.width / 2, canvas.height / 2) in real time.
+3. Accuracy Evaluation Engine (Canvas Pixel Matching)
+* Implement a scoring function that fires when the user clicks "Submit."
+* For Tiers 1 and 2: Extract the ImageData from the user's canvas and a hidden off-screen reference canvas (where the SVG is drawn at 100% opacity). Compare the bounding box of the user's drawn pixels against the reference image's pixels. Calculate an overlap percentage.
+* For Tiers 3 and 4: Apply a coordinate offset to the reference image data to align it with the user's right-side drawing area, then perform the pixel overlap comparison.
+* Implement a slight margin of error (e.g., a 3-pixel radius tolerance) so the tracing does not have to be mathematically perfect to score 100%.
 
-4. Zen Mode Toolbar & Aesthetics (index.html, style.css, client.js)
-* Keep the interface peaceful and uncluttered.
-* Include a symmetry toggle selector, brush size slider, eraser tool, and a clear canvas button.
-* Provide a curated color palette with soft, calming pastel tones alongside default black and white.
-* Add an "Export Image" button that calls canvas.toDataURL('image/png') so players can download their geometric artwork locally.
-
-Structure your response with the complete HTML markup for the three-block home layout, the updated CSS styling for the cards and Zen Mode canvas view, and the vanilla JavaScript logic powering the view switching and symmetry stroke calculations.
+Structure your response by providing the JSON level architecture, the SVG loading function, the client-side rendering logic for the four tier states (including generating the grid overlays), and the pixel-comparison algorithm for the scoring engine.

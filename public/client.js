@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.zenModeManager.init();
   }
 
+  if (typeof window.AcademyModeManager === 'function') {
+    window.academyModeManager = new window.AcademyModeManager();
+    window.academyModeManager.init();
+  }
+
   let currentUser = {
     id: null,
     username: 'Player',

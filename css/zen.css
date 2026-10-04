@@ -168,6 +168,12 @@ body.zen-mode-active .bg-doodle-hint {
   box-shadow: 1px 1px 0px var(--ink-pure);
 }
 
+.btn-zen-action.active {
+  background: #EEF2FF;
+  border-color: #4F46E5;
+  color: #4F46E5;
+}
+
 .btn-zen-export {
   background: #D1FAE5;
   color: #065F46;
@@ -201,20 +207,21 @@ body.zen-mode-active .bg-doodle-hint {
 
 .zen-canvas-container {
   position: relative;
-  width: 100%;
-  max-width: 1160px;
-  flex: 1;
-  min-height: 0;
-  aspect-ratio: 1200 / 800;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 170px);
+  aspect-ratio: 1 / 1;
   background: #FFFFFF;
-  border: var(--line-thick);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-modal);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   touch-action: none;
+  margin: 0 auto;
 }
 
 .zen-guide-canvas,
@@ -230,7 +237,7 @@ body.zen-mode-active .bg-doodle-hint {
 
 .zen-guide-canvas {
   pointer-events: none;
-  z-index: 1;
+  z-index: 3;
 }
 
 .zen-drawing-canvas {

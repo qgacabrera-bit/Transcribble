@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:svg="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:ns1="http://sozi.baierouge.fr" xmlns:xlink="http://www.w3.org/1999/xlink" id="svg2" viewBox="0 0 720 720" version="1.1" inkscape:version="0.91 r13725">
+  <g id="layer1" transform="translate(0 -332.36)">
+    <g id="g2974" transform="matrix(.93119 0 0 .93119 5.6674 78.41)">
+      <path id="path2970" style="stroke:#000000;stroke-width:1.0739px;fill:none" d="m380.55 338.43 79.738 245.42h258.04l-208.76 151.68 79.74 245.42-208.76-151.68-208.75 151.68 79.73-245.42-208.75-151.68h258.04l79.738-245.42z"/>
+      <path id="path2972" style="stroke:#000000;stroke-width:1.0739px;fill:none" d="m380.55 338.43v490.84l208.76 151.68-288.5-397.1h-258.04l466.8 151.68 208.76-151.68-466.8 151.68-79.73 245.42 288.49-397.1-79.74-245.42z"/>
+    </g>
+  </g>
+  <metadata>
+    <rdf:RDF>
+      <cc:Work>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <cc:license rdf:resource="http://creativecommons.org/licenses/publicdomain/"/>
+        <dc:publisher>
+          <cc:Agent rdf:about="http://openclipart.org/">
+            <dc:title>Openclipart</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:title>pentagram pizza</dc:title>
+        <dc:date>2011-06-30T06:11:54</dc:date>
+        <dc:description>pentagram pizza</dc:description>
+        <dc:source>https://openclipart.org/detail/147769/pentagram-pizza-by-10binary</dc:source>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>10binary</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>pentagram</rdf:li>
+            <rdf:li>pizza</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License rdf:about="http://creativecommons.org/licenses/publicdomain/">
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Reproduction"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Distribution"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#DerivativeWorks"/>
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>
