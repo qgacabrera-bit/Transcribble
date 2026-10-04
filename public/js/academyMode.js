@@ -647,16 +647,15 @@ class AcademyModeManager {
       }
     }
 
-    // Extract reference pixels and bounding box
+    // Extract reference pixels and build 3-pixel dilated tolerance map (refTolMap)
     const TOLERANCE_RADIUS = 3; // 3-pixel radius tolerance
     const TOL_SQ = TOLERANCE_RADIUS * TOLERANCE_RADIUS; // 9
 
+    const refTolMap = new Uint8Array(W * H);
     let totalRefPixels = 0;
     let matchedRefPixels = 0;
 
-    let minRefX = W, maxRefX = 0, minRefY = H, maxRefY = 0;
-
-    // Step size 1 for subpixel accuracy or 2 for high speed; step 1 is fast (<8ms)
+    // Step size 2 for fast subpixel accuracy (<15ms)
     const step = 2;
 
     for (let ry = 0; ry < H; ry += step) {
@@ -671,18 +670,26 @@ class AcademyModeManager {
           const b = refPixels[rIdx + 2];
           // Valid reference stroke/fill
           if (r < 250 || g < 250 || b < 250) {
-            // Target coordinate on user drawing canvas with offset applied
             const targetX = rx + coordOffsetX;
             const targetY = ry;
-
-            if (targetX < minRefX) minRefX = targetX;
-            if (targetX > maxRefX) maxRefX = targetX;
-            if (targetY < minRefY) minRefY = targetY;
-            if (targetY > maxRefY) maxRefY = targetY;
-
             totalRefPixels++;
 
-            // Test if any user pixel exists within 3-pixel radius tolerance
+            // Dilate reference pixel by 3px tolerance radius
+            for (let dy = -TOLERANCE_RADIUS; dy <= TOLERANCE_RADIUS; dy++) {
+              const cy = targetY + dy;
+              if (cy < 0 || cy >= H) continue;
+              const cRow = cy * W;
+              for (let dx = -TOLERANCE_RADIUS; dx <= TOLERANCE_RADIUS; dx++) {
+                if (dx * dx + dy * dy <= TOL_SQ) {
+                  const cx = targetX + dx;
+                  if (cx >= 0 && cx < W) {
+                    refTolMap[cRow + cx] = 1;
+                  }
+                }
+              }
+            }
+
+            // Check if user covered this reference pixel within 3px tolerance
             let foundMatch = false;
             for (let dy = -TOLERANCE_RADIUS; dy <= TOLERANCE_RADIUS && !foundMatch; dy++) {
               const checkY = targetY + dy;
@@ -710,47 +717,43 @@ class AcademyModeManager {
       }
     }
 
-    if (totalRefPixels === 0) {
-      totalRefPixels = 1;
-    }
+    if (totalRefPixels === 0) totalRefPixels = 1;
 
-    // Raw coverage recall: percentage of reference pixels traced/replicated
+    // 1. Coverage (Recall): percentage of reference strokes traced
     const rawCoverage = (matchedRefPixels / totalRefPixels) * 100;
 
-    // Precision check: calculate if user scribbled extensively outside target bounding box
-    const boundPad = 25;
-    const allowedMinX = Math.max(0, minRefX - boundPad);
-    const allowedMaxX = Math.min(W - 1, maxRefX + boundPad);
-    const allowedMinY = Math.max(0, minRefY - boundPad);
-    const allowedMaxY = Math.min(H - 1, maxRefY + boundPad);
-
-    let strayPixelCount = 0;
-    let sampledUserPixels = 0;
+    // 2. Cleanliness (Precision): what percentage of user ink falls inside the valid tolerance band?
+    // Prevents filling in empty space, scribbling, or flooding the canvas with black ink.
+    let totalSampledUserPixels = 0;
+    let validUserPixels = 0;
 
     for (let y = 0; y < H; y += step) {
       const rowOffset = y * W;
       for (let x = 0; x < W; x += step) {
         if (userMap[rowOffset + x] === 1) {
-          sampledUserPixels++;
-          if (x < allowedMinX || x > allowedMaxX || y < allowedMinY || y > allowedMaxY) {
-            strayPixelCount++;
+          totalSampledUserPixels++;
+          if (refTolMap[rowOffset + x] === 1) {
+            validUserPixels++;
           }
         }
       }
     }
 
-    // Stray penalty: up to 35% deduction if drawing all over the screen
-    let strayRatio = sampledUserPixels > 0 ? (strayPixelCount / sampledUserPixels) : 0;
-    let strayPenalty = Math.min(35, Math.round(strayRatio * 50));
+    const precision = totalSampledUserPixels > 0 ? (validUserPixels / totalSampledUserPixels) : 0;
+    const isFlooded = (precision < 0.25 && rawCoverage > 60);
 
-    let finalAccuracy = Math.max(0, Math.min(100, Math.round(rawCoverage - strayPenalty)));
+    // Cleanliness multiplier:
+    // Generously allows natural hand jitter / bold brushes down to 50% precision without penalty.
+    // If user floods or colors in the empty negative space (precision < 25%),
+    // the multiplier drops sharply towards 0, resulting in failure.
+    const cleanlinessMultiplier = Math.min(1.0, Math.pow(precision / 0.50, 1.25));
+    let finalAccuracy = Math.max(0, Math.min(100, Math.round(rawCoverage * cleanlinessMultiplier)));
 
     // Tier 4 Color-Matching Verification
     let colorCheckResult = null;
     if (level.tier === 4 && Array.isArray(level.targetColors) && level.targetColors.length > 0) {
       colorCheckResult = this.verifyTier4Colors(level.targetColors);
       if (!colorCheckResult.allUsed) {
-        // Minor deduction for missing required palette colors in Tier 4
         finalAccuracy = Math.max(0, finalAccuracy - (colorCheckResult.missingCount * 10));
       }
     }
@@ -770,13 +773,14 @@ class AcademyModeManager {
       tier: level.tier,
       accuracy: finalAccuracy,
       rawCoverage: Math.round(rawCoverage),
+      precision: Math.round(precision * 100),
       targetAccuracy: level.targetAccuracy,
       passed,
       grade,
+      isFlooded,
       colorCheck: colorCheckResult,
       matchedRefPixels,
-      totalRefPixels,
-      strayPenalty
+      totalRefPixels
     };
 
     // Show celebratory sound and results modal
@@ -840,7 +844,9 @@ class AcademyModeManager {
     }
 
     if (messageText) {
-      if (result.passed) {
+      if (result.isFlooded) {
+        messageText.textContent = `Too much spilled ink detected! Trace the contours neatly instead of filling in the empty space.`;
+      } else if (result.passed) {
         messageText.textContent = `Excellent drawing! You scored ${result.accuracy}%, surpassing the ${result.targetAccuracy}% target.`;
       } else {
         messageText.textContent = `You scored ${result.accuracy}%. Aim for ${result.targetAccuracy}% by matching contours more closely.`;
