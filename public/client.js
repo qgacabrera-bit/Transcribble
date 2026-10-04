@@ -84,6 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const guesserLockOverlay = document.getElementById('guesserLockOverlay');
   const lockTitle = document.getElementById('lockTitle');
 
+  // Dedicated Guessing Space Elements (Separated from Chat - Top of Chat)
+  const guessingCard = document.getElementById('guessingCard');
+  const guessingCountBadge = document.getElementById('guessingCountBadge');
+  const guessingWordBlanks = document.getElementById('guessingWordBlanks');
+  const recentGuessesList = document.getElementById('recentGuessesList');
+  const sidebarGuessForm = document.getElementById('sidebarGuessForm');
+  const sidebarGuessInput = document.getElementById('sidebarGuessInput');
+
+  // Stroke Tracking for Undo
+  let currentStrokeId = null;
+  let myStrokeIds = [];
+
   // Modals & Overlays
   const roundEndOverlay = document.getElementById('roundEndOverlay');
   const roundEndBadge = document.getElementById('roundEndBadge');
@@ -100,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sizeButtons = document.querySelectorAll('.size-btn');
   const colorSwatches = document.querySelectorAll('.color-swatch');
   const customColorInput = document.getElementById('customColorInput');
+  const undoCanvasBtn = document.getElementById('undoCanvasBtn');
   const clearCanvasBtn = document.getElementById('clearCanvasBtn');
   const downloadCanvasBtn = document.getElementById('downloadCanvasBtn');
 
@@ -1648,6 +1661,10 @@ document.addEventListener('DOMContentLoaded', () => {
     isDrawing = true;
     hasMoved = false;
 
+    // Generate unique strokeId for this drawing gesture
+    currentStrokeId = 'str_' + (socket.id || 'me') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+    myStrokeIds.push(currentStrokeId);
+
     const coords = getCanvasCoords(e);
     lastX = coords.x;
     lastY = coords.y;
@@ -1660,7 +1677,8 @@ document.addEventListener('DOMContentLoaded', () => {
       y: Math.round(lastY),
       color: currentColor,
       size: currentSize,
-      isEraser: isEraser
+      isEraser: isEraser,
+      strokeId: currentStrokeId
     });
   });
 
@@ -1690,7 +1708,8 @@ document.addEventListener('DOMContentLoaded', () => {
       currY: Math.round(currY),
       color: currentColor,
       size: currentSize,
-      isEraser: isEraser
+      isEraser: isEraser,
+      strokeId: currentStrokeId
     });
 
     lastX = currX;
@@ -1700,6 +1719,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function stopDrawing(e) {
     if (!isDrawing) return;
     isDrawing = false;
+    currentStrokeId = null;
     if (e && e.pointerId) {
       try {
         canvas.releasePointerCapture(e.pointerId);
@@ -1928,6 +1948,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  function triggerUndo() {
+    if (!canDraw) return;
+    if (myStrokeIds.length === 0) {
+      showToast('No strokes to undo', 'info', '↩️', 1800);
+      return;
+    }
+    const strokeId = myStrokeIds.pop();
+    socket.emit('undo-canvas', { strokeId });
+    playSound('pop');
+  }
+
+  if (undoCanvasBtn) {
+    undoCanvasBtn.addEventListener('click', () => {
+      triggerUndo();
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      const active = document.activeElement;
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+      if (!isInput && canDraw) {
+        e.preventDefault();
+        triggerUndo();
+      }
+    }
+  });
+
   clearCanvasBtn.addEventListener('click', async () => {
     if (!canDraw) return;
     const confirmed = await window.showGameConfirmModal({
@@ -2022,6 +2070,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tabooGuideCard) tabooGuideCard.style.display = 'none';
       if (drawerGuideCard) drawerGuideCard.style.display = 'none';
       if (guesserLockOverlay) guesserLockOverlay.classList.remove('active');
+      if (guessingCard) guessingCard.style.display = 'none';
+      if (sidebarGuessForm) sidebarGuessForm.style.display = 'none';
 
       canDraw = true; // Free drawing enabled for all players before game starts!
 
@@ -2068,6 +2118,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (drawerStatusChip) drawerStatusChip.style.display = 'none';
       if (describerBurstBtn) describerBurstBtn.style.display = 'none';
       if (micToggleBtn) micToggleBtn.style.display = 'inline-flex';
+      if (guessingCard) guessingCard.style.display = 'none';
+      if (sidebarGuessForm) sidebarGuessForm.style.display = 'none';
 
       // Stop Game button is ONLY visible for the Host at the top header
       if (startGameBtn) {
@@ -2102,6 +2154,19 @@ document.addEventListener('DOMContentLoaded', () => {
       startGameBtn.style.display = 'none';
     }
 
+    const charCount = state.letterCount || 0;
+    const charLabel = `${charCount} ${charCount === 1 ? 'character' : 'characters'}`;
+
+    if (guessingCard) {
+      guessingCard.style.display = 'flex';
+      if (guessingWordBlanks) {
+        guessingWordBlanks.textContent = state.wordHint || '_____';
+      }
+      if (guessingCountBadge) {
+        guessingCountBadge.textContent = charLabel;
+      }
+    }
+
     // A. Role == DRAWER (Blind Drawer & Guesser)
     if (state.role === 'DRAWER') {
       canDraw = true;
@@ -2118,8 +2183,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Show Drawer Guide Card with word hint blanks
       if (drawerGuideCard) {
         drawerGuideCard.style.display = 'flex';
-        drawerMysteryText.textContent = `Mystery Word: ${state.wordHint || '_____'} (${state.letterCount || 0} letters) • Category: ${state.category || 'Secret'}`;
+        drawerMysteryText.textContent = `Mystery Word: ${state.wordHint || '_____'} (${charLabel}) • Category: ${state.category || 'Secret'}`;
       }
+
+      if (sidebarGuessForm) sidebarGuessForm.style.display = 'flex';
 
       drawerStatusChip.textContent = `🎨 YOU ARE THE BLIND DRAWER! Draw & Guess!`;
       drawerStatusChip.className = 'drawer-status-chip is-drawing';
@@ -2131,8 +2198,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (micToggleBtn) micToggleBtn.style.display = 'inline-flex';
       if (describerBurstBtn) describerBurstBtn.style.display = 'none';
 
-      chatInput.placeholder = 'Type your guess here (e.g. Is it an Apple?)...';
-      roleHelpText.textContent = '🎯 YOU ARE THE DRAWER: Sketch what clues describe, and type your guesses!';
+      chatInput.placeholder = 'Chat with other players...';
+      roleHelpText.textContent = '🎯 YOU ARE THE DRAWER: Sketch what clues describe, and type your guesses in the Guessing space!';
     }
     // B. Role == DESCRIBER (With Taboo Forbidden Words)
     else if (state.role === 'DESCRIBER') {
@@ -2143,8 +2210,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (guesserLockOverlay) guesserLockOverlay.classList.remove('active'); // allow clear view of canvas
 
-      // Hide Drawer Guide
+      // Hide Drawer Guide & Guess forms
       if (drawerGuideCard) drawerGuideCard.style.display = 'none';
+      if (sidebarGuessForm) sidebarGuessForm.style.display = 'none';
 
       // Display Target Word and Banned Words Prominently
       if (tabooGuideCard) {
@@ -2274,6 +2342,11 @@ document.addEventListener('DOMContentLoaded', () => {
       bannedWords: []
     });
 
+    myStrokeIds = [];
+    if (recentGuessesList) {
+      recentGuessesList.innerHTML = '<div class="no-guesses-placeholder">Waiting for drawer\'s first guess...</div>';
+    }
+
     roundEndOverlay.classList.remove('active');
     gameOverOverlay.classList.remove('active');
     playSound('round_start');
@@ -2296,6 +2369,11 @@ document.addEventListener('DOMContentLoaded', () => {
       bannedWords: data.bannedWords,
       drawerUsername: data.drawerUsername
     });
+
+    myStrokeIds = [];
+    if (recentGuessesList) {
+      recentGuessesList.innerHTML = '<div class="no-guesses-placeholder">Waiting for drawer\'s first guess...</div>';
+    }
 
     roundEndOverlay.classList.remove('active');
     gameOverOverlay.classList.remove('active');
@@ -2490,6 +2568,22 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('clear-canvas', () => {
     fillCanvasWhite();
     triggerWipeAnimation();
+    myStrokeIds = [];
+  });
+
+  socket.on('drawing-history-sync', (data) => {
+    fillCanvasWhite();
+    if (data && data.drawingHistory && data.drawingHistory.length > 0) {
+      data.drawingHistory.forEach(item => {
+        if (item.type === 'stroke') {
+          const s = item.data;
+          drawLineSegment(s.prevX, s.prevY, s.currX, s.currY, s.color, s.size, s.isEraser);
+        } else if (item.type === 'dot') {
+          const d = item.data;
+          drawDot(d.x, d.y, d.color, d.size, d.isEraser);
+        }
+      });
+    }
   });
 
   socket.on('play-sound', (data) => {
@@ -2515,8 +2609,59 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================================
-  // 8. Chat & Role-Based Clue / Guess Submission
+  // 8. Chat & Dedicated Drawer Guess Submission (Separated Guess Space)
   // =========================================================================
+
+  function submitDrawerGuess(raw) {
+    const text = String(raw || '').trim();
+    if (!text) return;
+
+    socket.emit('submit-drawer-guess', { guess: text });
+    if (sidebarGuessInput) {
+      sidebarGuessInput.value = '';
+      sidebarGuessInput.focus();
+    }
+  }
+
+  if (sidebarGuessForm) {
+    sidebarGuessForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitDrawerGuess(sidebarGuessInput ? sidebarGuessInput.value : '');
+    });
+  }
+
+  socket.on('drawer-guess-result', (data) => {
+    appendDrawerGuess(data);
+  });
+
+  function appendDrawerGuess(data) {
+    if (!recentGuessesList) return;
+    const placeholder = recentGuessesList.querySelector('.no-guesses-placeholder');
+    if (placeholder) placeholder.remove();
+
+    const pill = document.createElement('div');
+    pill.className = `guess-entry-pill ${data.status || 'incorrect'}`;
+
+    let statusBadge = '<span class="guess-status-tag tag-wrong">❌</span>';
+    if (data.status === 'correct') {
+      statusBadge = '<span class="guess-status-tag tag-correct">🎉 CORRECT!</span>';
+    } else if (data.status === 'close') {
+      statusBadge = '<span class="guess-status-tag tag-close">🔥 SO CLOSE!</span>';
+    }
+
+    pill.innerHTML = `
+      <div class="guess-entry-main">
+        <span class="guess-entry-word">"${escapeHTML(data.guess)}"</span>
+        ${statusBadge}
+      </div>
+      <span class="guess-entry-time">${data.time || ''}</span>
+    `;
+
+    recentGuessesList.prepend(pill);
+    while (recentGuessesList.children.length > 15) {
+      recentGuessesList.removeChild(recentGuessesList.lastChild);
+    }
+  }
 
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();

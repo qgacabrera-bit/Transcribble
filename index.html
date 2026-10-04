@@ -401,7 +401,7 @@
         <div class="drawer-guide-card" id="drawerGuideCard" style="display: none;">
           <div class="drawer-guide-left">
             <span class="drawer-role-badge">🎨 YOU ARE THE BLIND DRAWER &amp; GUESSER!</span>
-            <span class="drawer-mystery-text" id="drawerMysteryText">Mystery Word: _ _ _ _ _ (5 letters)</span>
+            <span class="drawer-mystery-text" id="drawerMysteryText">Mystery Word: _ _ _ _ _ (5 characters)</span>
           </div>
           <div class="drawer-guide-right">
             <span>Read clues in chat &bull; Sketch the object &bull; Type your guesses!</span>
@@ -420,6 +420,14 @@
           </div>
 
           <div class="canvas-meta-actions">
+            <button class="btn-action-sm" id="undoCanvasBtn" title="Undo your last stroke (Ctrl+Z)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6"></path>
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+              </svg>
+              <span>Undo</span>
+            </button>
             <button class="btn-action-sm" id="downloadCanvasBtn" title="Download your drawing">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -678,11 +686,41 @@
           <div class="players-list-pills" id="playersList"></div>
         </div>
 
-        <!-- Chat Stream (Clues & Guesses) -->
+        <!-- Dedicated Guessing Space (Cleanly Separated from Chat Clues) -->
+        <div class="guessing-card" id="guessingCard" style="display: none;">
+          <div class="guessing-card-header">
+            <div class="guessing-title-row">
+              <div class="guessing-title-wrap">
+                <span class="guessing-badge-icon">🎯</span>
+                <span class="section-title">Drawer's Guesses</span>
+              </div>
+              <span class="guessing-count-badge" id="guessingCountBadge"></span>
+            </div>
+            <div class="guessing-blanks-row">
+              <span class="guessing-word-blanks" id="guessingWordBlanks">_ _ _ _ _</span>
+            </div>
+          </div>
+
+          <!-- Feed of drawer's guesses -->
+          <div class="recent-guesses-list" id="recentGuessesList">
+            <div class="no-guesses-placeholder">Waiting for drawer's first guess...</div>
+          </div>
+
+          <!-- Drawer's dedicated guess input form in sidebar -->
+          <form class="sidebar-guess-form" id="sidebarGuessForm" style="display: none;">
+            <input type="text" id="sidebarGuessInput" class="sidebar-guess-input" placeholder="Type your guess here..." maxlength="60" autocomplete="off" />
+            <button type="submit" class="sidebar-guess-btn" id="sidebarGuessBtn" title="Submit Guess">
+              <span class="guess-btn-icon">🎯</span>
+              <span>Guess</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Chat Stream (Clues & Discussion) -->
         <div class="chat-card">
           <div class="chat-header">
-            <span class="chat-title" id="chatHeaderTitle">Chat</span>
-            <span class="chat-subtext" id="chatHeaderSubtext">Describers give clues • Drawer types guesses</span>
+            <span class="chat-title" id="chatHeaderTitle">Chat &amp; Clues</span>
+            <span class="chat-subtext" id="chatHeaderSubtext">Describers give clues without forbidden words</span>
           </div>
 
           <!-- Scrollable Message History Area (Exclusive for Player Clues & Guesses) -->

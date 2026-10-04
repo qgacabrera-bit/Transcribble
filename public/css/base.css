@@ -1,0 +1,218 @@
+/* ==========================================================================
+   Transcribble - Hand-Drawn Cartoon Aesthetic
+   Based on the official transparent Transcribble pencil-doodle logo
+   Black & White Comic Site Frame with Vibrant In-Game Colors for Gameplay
+   ========================================================================== */
+
+:root {
+  /* Strictly Monochrome Black & White Site Foundation */
+  --bg-page: #F8F8F6;
+  --bg-paper: #FFFFFF;
+  --bg-subtle: #F3F3F1;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8F8F8;
+  --bg-dark: #000000;
+  --bg-dark-hover: #1A1A1A;
+
+  /* Ink & Pencil Line Tones */
+  --ink-pure: #000000;
+  --ink-charcoal: #2A2A2A;
+  --pencil-lead: #555555;
+  --pencil-medium: #777777;
+  --pencil-light: #AAAAAA;
+  --pencil-faint: #D8D8D5;
+  --paper-white: #FFFFFF;
+
+  /* Vibrant Gameplay Accent Colors (For drawing canvas & game clues) */
+  --accent-red: #EF4444;
+  --accent-green: #10B981;
+  --accent-blue: #3B82F6;
+  --accent-amber: #F59E0B;
+  --accent-cyan: #06B6D4;
+  --accent-purple: #A855F7;
+
+  /* Comic Drawing Outlines */
+  --line-hairline: 1.5px solid #000000;
+  --line-main: 2.5px solid #000000;
+  --line-thick: 3.5px solid #000000;
+  --line-bold: 4px solid #000000;
+
+  /* Hard Hand-Drawn Comic Drop Shadows */
+  --shadow-sm: 2px 2px 0px #000000;
+  --shadow-md: 4px 4px 0px #000000;
+  --shadow-lg: 6px 6px 0px #000000;
+  --shadow-xl: 8px 8px 0px #000000;
+  --shadow-modal: 12px 12px 0px #000000;
+
+  /* Playful Cartoon Curves */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+  --radius-doodle: 16px 20px 16px 18px;
+
+  /* Cartoon Typography */
+  --font-heading: 'Fredoka', 'Comic Neue', cursive, sans-serif;
+  --font-comic: 'Comic Neue', 'Fredoka', cursive, sans-serif;
+  --font-hand: 'Patrick Hand', 'Comic Neue', cursive, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-page);
+  /* Cute dotted sketchbook page grid */
+  background-image: radial-gradient(#D5D5D1 1.3px, transparent 1.3px);
+  background-size: 22px 22px;
+  color: var(--ink-pure);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input {
+  font-family: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+button {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.15s ease,
+              color 0.15s ease;
+}
+
+button:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: var(--shadow-lg);
+}
+
+button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1720px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 10px 16px 12px 16px;
+  gap: 10px;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Room Page is completely hidden (0% visibility) when user is on the Home / Landing screen */
+body:has(#landingOverlay:not(.hidden)) .app-container,
+.landing-overlay:not(.hidden) ~ .app-container {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ==========================================================================
+   Header Navigation & Game Control Banner
+   ========================================================================== */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px;
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+  gap: 14px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo-img {
+  height: 48px;
+  max-height: 52px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.35));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.brand-logo-img:hover {
+  transform: rotate(-2.5deg) scale(1.05);
+}
+
+.btn-home-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg-paper);
+  border: var(--line-main);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  cursor: pointer;
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.btn-home-nav:hover {
+  background: #FEF3C7;
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: var(--shadow-md);
+  color: #B45309;
+}
+
+.btn-home-nav:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.home-icon {
+  font-size: 1.05rem;
+}
+
+.home-text {
+  letter-spacing: 0.2px;
+}
+
+.brand-badge {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: var(--bg-dark);
+  color: var(--paper-white);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  box-shadow: 2px 2px 0px #000000;
+  vertical-align: middle;
+}
+

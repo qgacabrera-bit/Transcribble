@@ -1,0 +1,857 @@
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+/* Default: Desktop hides mobile view switcher */
+.mobile-view-nav {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 8px 12px;
+  }
+  .main-content {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .canvas-stage-wrapper {
+    aspect-ratio: 1200 / 800;
+    max-height: clamp(260px, 45vh, 420px);
+    height: auto;
+  }
+  .chat-card {
+    height: 380px;
+  }
+}
+
+/* ==========================================================================
+   Smartphones & Small Tablets (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 6px 8px 8px;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    gap: 6px;
+  }
+
+  /* Two-Row Responsive Header via CSS Grid */
+  .app-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "brand status"
+      "banner banner";
+    gap: 8px 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: var(--radius-lg);
+  }
+
+  .header-brand {
+    grid-area: brand;
+    gap: 8px;
+  }
+
+  .brand-logo-img {
+    height: 38px;
+    max-height: 42px;
+  }
+
+  .header-room-pill {
+    padding: 3px 8px;
+    font-size: 0.78rem;
+  }
+
+  .btn-copy-code {
+    padding: 2px 8px;
+    font-size: 0.72rem;
+  }
+
+  .header-status {
+    grid-area: status;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .btn-mic-toggle, .btn-home-nav, .btn-sound-toggle {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+
+  .game-banner {
+    grid-area: banner;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 6px 10px;
+    gap: 6px;
+    border-radius: var(--radius-md);
+  }
+
+  .mode-selector-pill {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+
+  .round-pill {
+    padding: 3px 10px;
+    font-size: 0.74rem;
+  }
+
+  .game-timer-pill {
+    padding: 2px 10px;
+    font-size: 0.85rem;
+  }
+
+  .banner-word-display {
+    font-size: 0.88rem;
+    gap: 5px;
+  }
+
+  .secret-word {
+    font-size: 0.95rem;
+  }
+
+  .btn-primary-action {
+    padding: 5px 14px;
+    font-size: 0.82rem;
+  }
+
+  /* Segmented Mobile View Switcher */
+  .mobile-view-nav {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: var(--bg-paper);
+    color: var(--ink-pure);
+    border: 2px solid #000000;
+    border-radius: var(--radius-pill);
+    box-shadow: 1.5px 1.5px 0px #000000;
+    padding: 6px 4px;
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s ease, background 0.15s ease, color 0.15s ease;
+  }
+
+  .mobile-nav-btn:hover {
+    background: #F4F4F2;
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0px #000000;
+  }
+
+  .mobile-nav-btn.active {
+    background: #000000;
+    color: #FFFFFF;
+    box-shadow: 1.5px 1.5px 0px #000000;
+    transform: translate(1px, 1px);
+  }
+
+  .mobile-nav-btn.active .nav-icon {
+    filter: brightness(1.2);
+  }
+
+  .chat-unread-badge {
+    position: absolute;
+    top: -4px;
+    right: 2px;
+    background: #EF4444;
+    color: #FFFFFF;
+    border: 1.5px solid #000000;
+    border-radius: var(--radius-pill);
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    line-height: 1;
+    animation: bounceNotice 1s infinite alternate;
+  }
+
+  /* Dynamic View Switching on Mobile */
+  /* 1. Canvas View (Matches Chat Card sizing: fills screen, canvas expands, options right below) */
+  .main-content[data-active-view="canvas"] .canvas-section {
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    width: 100%;
+    height: calc(100dvh - 156px) !important;
+    max-height: calc(100dvh - 156px) !important;
+    padding: 6px 8px 6px;
+    gap: 5px;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  .main-content[data-active-view="canvas"] .canvas-top-bar {
+    flex-shrink: 0;
+  }
+  .main-content[data-active-view="canvas"] .canvas-stage-wrapper {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    overflow: hidden;
+    position: relative;
+    border-radius: var(--radius-md);
+  }
+  .main-content[data-active-view="canvas"] .chat-section {
+    display: none !important;
+  }
+
+  /* 2. Chat View (Focus mode for typing guesses & reading clues) */
+  .main-content[data-active-view="chat"] .canvas-section {
+    display: none !important;
+  }
+  .main-content[data-active-view="chat"] .chat-section {
+    display: flex !important;
+    width: 100%;
+  }
+  .main-content[data-active-view="chat"] .players-card {
+    display: none !important;
+  }
+  .main-content[data-active-view="chat"] .chat-card {
+    display: flex !important;
+    height: calc(100dvh - 156px) !important;
+    max-height: calc(100dvh - 156px) !important;
+    min-height: 280px;
+  }
+
+  /* 3. Scores View (Full room leaderboard & ranks) */
+  .main-content[data-active-view="scores"] .canvas-section {
+    display: none !important;
+  }
+  .main-content[data-active-view="scores"] .chat-section {
+    display: flex !important;
+    width: 100%;
+  }
+  .main-content[data-active-view="scores"] .players-card {
+    display: block !important;
+    width: 100%;
+    height: calc(100dvh - 156px) !important;
+    max-height: calc(100dvh - 156px) !important;
+    overflow-y: auto;
+  }
+  .main-content[data-active-view="scores"] .chat-card {
+    display: none !important;
+  }
+
+  /* 4. Split View (Dual watch & chat) */
+  .main-content[data-active-view="split"] .canvas-section {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100%;
+    height: calc(50dvh - 82px) !important;
+    padding: 5px 6px;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .main-content[data-active-view="split"] .canvas-stage-wrapper {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+  .main-content[data-active-view="split"] .chat-section {
+    display: flex !important;
+    width: 100%;
+  }
+  .main-content[data-active-view="split"] .players-card {
+    display: none !important;
+  }
+  .main-content[data-active-view="split"] .chat-card {
+    display: flex !important;
+    height: calc(50dvh - 82px) !important;
+  }
+
+  /* ========================================================================
+     Mobile Collapsible Drawing Kit (Top-Left Popover Window)
+     ======================================================================== */
+  .canvas-top-bar {
+    padding: 0 2px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Interactive Tool Preview Pill on Top Left */
+  .tool-preview-pill {
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    background: #FFFFFF;
+    border: 2px solid #000000;
+    border-radius: var(--radius-pill);
+    box-shadow: 2px 2px 0px #000000;
+    transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tool-preview-pill:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px #000000;
+  }
+  .tool-preview-pill.active {
+    background: #000000;
+    color: #FFFFFF;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.4);
+  }
+  .tool-preview-pill.active .tool-preview-dot {
+    border-color: #FFFFFF;
+  }
+  .tool-dropdown-arrow {
+    display: inline-block;
+    margin-left: 3px;
+    font-size: 0.76rem;
+    font-weight: 900;
+    transition: transform 0.18s ease;
+  }
+  .tool-preview-pill.active .tool-dropdown-arrow {
+    transform: rotate(180deg);
+  }
+
+  .canvas-meta-actions {
+    gap: 4px;
+  }
+  .canvas-meta-actions .btn-action-sm {
+    padding: 3px 8px;
+    font-size: 0.74rem;
+    gap: 3px;
+  }
+
+  /* When closed: Collapsible window is hidden on mobile */
+  .art-toolbar {
+    display: none !important;
+  }
+
+  /* When opened: Sleek comic popover window on top-left over the canvas */
+  .art-toolbar.mobile-tools-open {
+    display: flex !important;
+    flex-direction: column !important;
+    position: absolute;
+    top: 36px;
+    left: 8px;
+    z-index: 120;
+    width: clamp(260px, 84vw, 310px);
+    max-width: 92vw;
+    background: #FFFFFF;
+    border: 3px solid #000000;
+    border-radius: 16px;
+    box-shadow: 6px 6px 0px #000000;
+    padding: 12px 14px;
+    gap: 10px;
+    animation: confirmPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .mobile-toolbar-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+  }
+  .mobile-toolbar-title {
+    font-family: var(--font-heading);
+    font-size: 0.88rem;
+    font-weight: 900;
+    color: #000000;
+  }
+  .btn-close-mobile-tools {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #000000;
+    cursor: pointer;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    transition: transform 0.12s ease;
+  }
+  .btn-close-mobile-tools:active {
+    transform: scale(0.9);
+  }
+
+  /* Section 1: Tool Selector (Brush vs Eraser) */
+  .tool-group.tool-types {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+  .tool-types .tool-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-family: var(--font-heading);
+    font-size: 0.82rem;
+    font-weight: 800;
+    background: #F4F4F2;
+    color: #000000;
+    border: 2px solid #000000;
+    border-radius: var(--radius-pill);
+    box-shadow: 2px 2px 0px #000000;
+    cursor: pointer;
+  }
+  .tool-types .tool-btn.active {
+    background: #000000;
+    color: #FFFFFF;
+    box-shadow: 2px 2px 0px #000000;
+  }
+
+  /* Section 2: Stroke Sizes */
+  .tool-group.tool-sizes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+  .tool-sizes .group-label {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #333333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .size-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+  .size-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 2px;
+    background: #FFFFFF;
+    border: 2px solid #000000;
+    border-radius: 8px;
+    box-shadow: 1.5px 1.5px 0px #000000;
+    cursor: pointer;
+  }
+  .size-btn.active {
+    background: #000000;
+    color: #FFFFFF;
+    box-shadow: 1.5px 1.5px 0px #000000;
+  }
+  .size-btn .size-label {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    font-weight: 800;
+  }
+  .size-indicator-dot {
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+  }
+  .dot-thin { width: 4px; height: 4px; }
+  .dot-medium { width: 7px; height: 7px; }
+  .dot-thick { width: 11px; height: 11px; }
+  .dot-chunky { width: 15px; height: 15px; }
+
+  /* Section 3: Color Palette Grid */
+  .tool-group.tool-colors {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding-top: 4px;
+    border-top: 1.5px dashed rgba(0, 0, 0, 0.2);
+  }
+  .tool-colors .group-label {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #333333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .palette-swatches {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px 6px;
+    justify-items: center;
+    align-items: center;
+    width: 100%;
+    padding: 2px 0;
+  }
+  .color-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2.5px solid #000000;
+    box-shadow: 2px 2px 0px #000000;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .color-swatch:hover {
+    transform: scale(1.1);
+  }
+  .color-swatch.active {
+    transform: scale(1.18);
+    box-shadow: 2.5px 2.5px 0px #000000;
+    outline: 2px solid #000000;
+    outline-offset: 1px;
+  }
+  .color-picker-label {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2.5px solid #000000;
+    box-shadow: 2px 2px 0px #000000;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Guidance Banners on Mobile */
+  .taboo-guide-card {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .taboo-card-top-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .taboo-target-word {
+    font-size: 1.3rem;
+  }
+  .drawer-guide-card {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .drawer-guide-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .drawer-mystery-text {
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+  }
+  .drawer-canvas-guess-form {
+    width: 100%;
+  }
+  .drawer-guess-input {
+    flex: 1;
+    width: auto;
+  }
+
+  /* Impostor Overlays on Mobile */
+  .impostor-turn-strip {
+    top: 8px;
+    width: 94%;
+    max-width: 320px;
+  }
+  .turn-strip-inner {
+    padding: 6px 14px;
+    font-size: 0.86rem;
+    gap: 6px;
+  }
+  .turn-strip-timer {
+    font-size: 0.82rem;
+    padding: 2px 8px;
+  }
+  .voting-modal-card {
+    padding: 16px 14px;
+    max-height: 88dvh;
+    gap: 12px;
+    width: 95%;
+  }
+  .voting-candidates-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-height: 230px;
+  }
+  .voting-candidate-card {
+    padding: 10px 6px;
+    gap: 5px;
+  }
+  .candidate-avatar-wrap {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+  .candidate-name {
+    font-size: 0.82rem;
+    max-width: 85px;
+  }
+  .role-flash-card {
+    padding: 22px 16px;
+    width: 92%;
+  }
+  .role-flash-title {
+    font-size: 1.45rem;
+  }
+  .impostor-gameover-card {
+    padding: 16px 14px;
+    max-height: 88dvh;
+    width: 95%;
+  }
+
+  /* Prevent iOS Safari Automatic Zoom on Inputs */
+  input[type="text"],
+  input[type="search"],
+  .chat-input,
+  .impostor-guess-input,
+  .confirm-input-field,
+  .landing-input {
+    font-size: 16px !important;
+  }
+
+  /* Landing Screen background touch pass-through for smooth scrolling */
+  .bg-doodle-canvas {
+    pointer-events: none !important;
+  }
+  .bg-doodle-hint {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Extra Small Smartphones (<= 480px)
+   ========================================================================== */
+@media (max-width: 480px) {
+  .app-container {
+    padding: 4px 6px 8px;
+    gap: 6px;
+  }
+  .brand-logo-img {
+    height: 32px;
+  }
+  .header-room-pill {
+    padding: 2px 6px;
+    font-size: 0.72rem;
+  }
+  .copy-label {
+    display: none;
+  }
+  .btn-copy-code {
+    padding: 3px 6px;
+  }
+  .home-text, .mic-label {
+    display: none;
+  }
+  .btn-mic-toggle, .btn-home-nav {
+    padding: 5px 8px;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    justify-content: center;
+  }
+  .btn-sound-toggle {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .game-banner {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+  .mode-selector-pill {
+    padding: 3px 8px;
+    font-size: 0.74rem;
+  }
+  .round-pill {
+    padding: 2px 8px;
+    font-size: 0.7rem;
+  }
+  .btn-primary-action {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+  }
+  .mobile-nav-btn {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+  .chat-bubble {
+    padding: 6px 10px;
+    font-size: 0.88rem;
+  }
+}
+
+/* ==========================================================================
+   Mobile Landscape Handheld Console Mode
+   ========================================================================== */
+@media (max-height: 520px) and (orientation: landscape) {
+  .app-container {
+    padding: 3px 8px;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    gap: 4px;
+  }
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px;
+    gap: 6px;
+  }
+  .brand-logo-img {
+    height: 28px;
+  }
+  .main-content {
+    display: grid !important;
+    grid-template-columns: 1fr clamp(200px, 34vw, 300px) !important;
+    gap: 6px;
+  }
+  .mobile-view-nav {
+    display: none !important;
+  }
+  .canvas-section {
+    display: flex !important;
+    width: auto !important;
+  }
+  .chat-section {
+    display: flex !important;
+    width: auto !important;
+  }
+  .canvas-stage-wrapper {
+    height: clamp(160px, 60vh, 230px) !important;
+  }
+  .chat-card {
+    height: clamp(160px, 60vh, 230px) !important;
+  }
+  .players-card {
+    display: none !important;
+  }
+  .art-toolbar {
+    padding: 3px 6px;
+    gap: 4px;
+  }
+}
+
+/* ==========================================================================
+   Floating Disappearing Toast Notifications (Comic Callouts)
+   ========================================================================== */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 540px;
+  width: 90%;
+}
+
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 22px;
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-lg);
+  color: var(--ink-pure);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 700;
+  animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-item.toast-leave {
+  opacity: 0;
+  transform: translateY(-18px) scale(0.92);
+}
+
+.toast-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  animation: bouncePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bouncePop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.toast-text {
+  flex: 1;
+  line-height: 1.3;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ==========================================================================
+   Home Screen & Landing Page Overlay
+   ========================================================================== */
+.landing-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px 48px;
+  background-color: var(--bg-page);
+  background-image: radial-gradient(#C5C5BF 1.4px, transparent 1.4px);
+  background-size: 20px 20px;
+  opacity: 1;
+  visibility: visible;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}

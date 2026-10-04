@@ -357,9 +357,9 @@ function getSanitizedState(room, socketId) {
     totalRounds: gs.totalRounds,
     timeLeft: gs.timeLeft,
     totalTime: gs.totalTime,
-    category: isLobby ? null : gs.targetCategory,
+    category: isLobby ? null : (room.selectedMode === 'impostor' && room.impostorGame ? room.impostorGame.secretCategory : gs.targetCategory),
     wordHint: isLobby ? null : gs.wordHint,
-    letterCount: isLobby ? 0 : (gs.targetWord ? gs.targetWord.length : 0),
+    letterCount: isLobby ? 0 : (gs.targetWord ? gs.targetWord.replace(/\s+/g, '').length : 0),
     targetWord: hasSecretAccess ? gs.targetWord : null,
     bannedWords: hasSecretAccess ? [...gs.bannedWords] : [],
     hostId: room.hostId,
@@ -749,7 +749,7 @@ function startRound(room) {
     totalRounds: room.gameState.totalRounds,
     wordHint: room.gameState.wordHint,
     category: room.gameState.targetCategory,
-    letterCount: card.word.length,
+    letterCount: card.word.replace(/\s+/g, '').length,
     timeLeft: room.gameState.timeLeft,
     totalTime: room.gameState.totalTime
   });
@@ -790,7 +790,12 @@ function startRound(room) {
 }
 
 function generateWordBlanks(word) {
-  return word.split('').map(char => (char === ' ' ? '   ' : '_')).join(' ');
+  if (!word) return '';
+  return word
+    .trim()
+    .split(/\s+/)
+    .map(w => w.split('').map(() => '_').join(' '))
+    .join('  \u00A0');
 }
 
 function checkTabooViolation(text, targetWord, bannedWords) {
@@ -840,6 +845,72 @@ function isCloseGuess(guess, target) {
     }
   }
   return true;
+}
+
+function handleDrawerGuess(room, socket, guessText) {
+  const user = room.connectedUsers.get(socket.id);
+  if (!user || !room.gameState.targetWord) return;
+
+  const normalizedGuess = guessText.trim().toLowerCase();
+  const normalizedTarget = room.gameState.targetWord.trim().toLowerCase();
+  const isMatch = normalizedGuess === normalizedTarget;
+
+  if (isMatch) {
+    const timeBonus = Math.floor((room.gameState.timeLeft / room.gameState.totalTime) * 300);
+    const drawerPoints = 300 + timeBonus;
+    user.score = (user.score || 0) + drawerPoints;
+
+    room.connectedUsers.forEach((u, sid) => {
+      if (sid !== room.gameState.drawerId) {
+        u.score = (u.score || 0) + 120;
+      }
+    });
+
+    io.to(room.id).emit('players-update', Array.from(room.connectedUsers.values()));
+
+    io.to(room.id).emit('round-won', {
+      winner: user.username,
+      targetWord: room.gameState.targetWord,
+      points: drawerPoints
+    });
+
+    io.to(room.id).emit('drawer-guess-result', {
+      id: 'guess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      sender: user.username,
+      guess: guessText,
+      status: 'correct',
+      time: formatCurrentTime()
+    });
+
+    io.to(room.id).emit('play-sound', { sound: 'win' });
+    broadcastNotification(room, `🏆 ${user.username} deduced "${room.gameState.targetWord.toUpperCase()}"! (+${drawerPoints} pts)`, 'success', '🎉', 5000);
+
+    endRound(room, true, `${user.username} guessed the secret word!`);
+    return;
+  }
+
+  const isClose = isCloseGuess(guessText, room.gameState.targetWord);
+  if (isClose) {
+    broadcastNotification(room, `🔥 Drawer's guess "${guessText}" is SO CLOSE!`, 'warning', '🔥', 3000);
+  }
+
+  io.to(room.id).emit('drawer-guess-result', {
+    id: 'guess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+    sender: user.username,
+    guess: guessText,
+    status: isClose ? 'close' : 'incorrect',
+    time: formatCurrentTime()
+  });
+
+  io.to(room.id).emit('chat-message', {
+    id: 'guess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+    sender: `${user.username} (Drawer)`,
+    color: user.color,
+    text: guessText,
+    time: formatCurrentTime(),
+    isGuess: true,
+    isClose: isClose
+  });
 }
 
 function endRound(room, won, reason) {
@@ -1103,7 +1174,8 @@ io.on('connection', (socket) => {
     if (room.drawingHistory.length >= MAX_HISTORY) {
       room.drawingHistory.shift();
     }
-    room.drawingHistory.push({ type: 'stroke', data: strokeData });
+    const strokeId = strokeData.strokeId || ('str_' + socket.id + '_' + Date.now());
+    room.drawingHistory.push({ type: 'stroke', data: strokeData, userId: socket.id, strokeId });
     socket.to(room.id).emit('draw-stroke', strokeData);
   });
 
@@ -1125,7 +1197,8 @@ io.on('connection', (socket) => {
     if (room.drawingHistory.length >= MAX_HISTORY) {
       room.drawingHistory.shift();
     }
-    room.drawingHistory.push({ type: 'dot', data: dotData });
+    const strokeId = dotData.strokeId || ('str_' + socket.id + '_' + Date.now());
+    room.drawingHistory.push({ type: 'dot', data: dotData, userId: socket.id, strokeId });
     socket.to(room.id).emit('draw-dot', dotData);
   });
 
@@ -1146,6 +1219,63 @@ io.on('connection', (socket) => {
     const username = user ? user.username : 'Player';
     io.to(room.id).emit('clear-canvas', { clearedBy: username });
     broadcastNotification(room, `${username} cleared the board!`, 'info', '🧹', 2000);
+  });
+
+  // 8.1 Undo Canvas Handling (Erases the last move by the current user)
+  socket.on('undo-canvas', (data) => {
+    const room = getSocketRoom(socket.id);
+    if (!room) return;
+
+    if (room.gameState.phase === PHASES.PLAYING) {
+      if (room.selectedMode === 'impostor' && room.impostorGame) {
+        if (!room.impostorGame.canDraw(socket.id)) return;
+      } else if (room.gameState.mode !== GAME_STATES.ROUND_ACTIVE || socket.id !== room.gameState.drawerId) {
+        return;
+      }
+    }
+
+    if (!room.drawingHistory || room.drawingHistory.length === 0) return;
+
+    let targetStrokeId = (data && data.strokeId) ? data.strokeId : null;
+    if (!targetStrokeId) {
+      for (let i = room.drawingHistory.length - 1; i >= 0; i--) {
+        const item = room.drawingHistory[i];
+        if (item.userId === socket.id && item.strokeId) {
+          targetStrokeId = item.strokeId;
+          break;
+        }
+      }
+    }
+
+    if (targetStrokeId) {
+      room.drawingHistory = room.drawingHistory.filter(item => item.strokeId !== targetStrokeId);
+    } else {
+      for (let i = room.drawingHistory.length - 1; i >= 0; i--) {
+        if (room.drawingHistory[i].userId === socket.id) {
+          room.drawingHistory.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    io.to(room.id).emit('drawing-history-sync', {
+      drawingHistory: room.drawingHistory,
+      undoneBy: socket.id
+    });
+  });
+
+  // 8.2 Dedicated Drawer Guess Handling (Separated from regular chat)
+  socket.on('submit-drawer-guess', (data) => {
+    const room = getSocketRoom(socket.id);
+    if (!room || room.gameState.phase !== PHASES.PLAYING) return;
+    if (socket.id !== room.gameState.drawerId) return;
+
+    const rawGuess = data && (data.guess || data.text);
+    if (!rawGuess || typeof rawGuess !== 'string') return;
+    const sanitized = String(rawGuess).slice(0, 100).trim();
+    if (!sanitized) return;
+
+    handleDrawerGuess(room, socket, sanitized);
   });
 
   // 9. Chat & Role-Based Clue/Guess Logic
@@ -1208,46 +1338,7 @@ io.on('connection', (socket) => {
 
       // --- B. DRAWER MAKES A GUESS ---
       if (isDrawer) {
-        const isMatch = sanitizedText.toLowerCase() === room.gameState.targetWord.toLowerCase();
-
-        if (isMatch) {
-          const timeBonus = Math.floor((room.gameState.timeLeft / room.gameState.totalTime) * 300);
-          const drawerPoints = 300 + timeBonus;
-          user.score = (user.score || 0) + drawerPoints;
-
-          room.connectedUsers.forEach((u, sid) => {
-            if (sid !== room.gameState.drawerId) {
-              u.score = (u.score || 0) + 120;
-            }
-          });
-
-          io.to(room.id).emit('players-update', Array.from(room.connectedUsers.values()));
-
-          io.to(room.id).emit('round-won', {
-            winner: user.username,
-            targetWord: room.gameState.targetWord,
-            points: drawerPoints
-          });
-
-          io.to(room.id).emit('play-sound', { sound: 'win' });
-          broadcastNotification(room, `🏆 ${user.username} deduced "${room.gameState.targetWord.toUpperCase()}"! (+${drawerPoints} pts)`, 'success', '🎉', 5000);
-
-          endRound(room, true, `${user.username} guessed the secret word!`);
-          return;
-        }
-
-        if (isCloseGuess(sanitizedText, room.gameState.targetWord)) {
-          broadcastNotification(room, `🔥 Drawer's guess "${sanitizedText}" is SO CLOSE!`, 'warning', '🔥', 3000);
-        }
-
-        io.to(room.id).emit('chat-message', {
-          id: 'guess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-          sender: `${user.username} (Drawer)`,
-          color: user.color,
-          text: sanitizedText,
-          time: formatCurrentTime(),
-          isGuess: true
-        });
+        handleDrawerGuess(room, socket, sanitizedText);
         return;
       }
     }

@@ -442,14 +442,17 @@
       }
 
       if (this.isImpostor) {
-        // Impostor Stealth View
+        this.currentCategory = payload.category || 'General';
+        // Impostor View - follows style of other players with white/none background and visible topic
         if (this.wordLabel) this.wordLabel.textContent = 'YOUR ROLE:';
         if (this.currentWordEl) {
-          this.currentWordEl.textContent = '🕵️ YOU ARE THE IMPOSTOR!';
-          this.currentWordEl.className = 'secret-word impostor-stealth-badge';
+          const cat = (payload.category || 'General').toUpperCase();
+          this.currentWordEl.textContent = `🕵️ YOU ARE THE IMPOSTOR! (Topic: ${cat})`;
+          this.currentWordEl.className = 'secret-word';
         }
         if (this.roleHelpText) {
-          this.roleHelpText.textContent = '🕵️ ' + payload.message + ' (Click "Guess Word" if you deduce it!)';
+          const cat = (payload.category || 'General').toUpperCase();
+          this.roleHelpText.textContent = `🕵️ You are the Impostor • Topic: ${cat} (Click "Guess Word" if you deduce it!)`;
         }
 
         this.showDramaticRoleModal({

@@ -1,0 +1,780 @@
+/* ==========================================================================
+   Impostor Mode - Styling System
+   ========================================================================== */
+
+/* Mode Switcher Pill in Room Header */
+.mode-selector-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-paper);
+  border: 2px solid var(--ink-pure);
+  box-shadow: 2px 2px 0px var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+}
+.mode-selector-pill:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--ink-pure);
+}
+.mode-selector-pill.impostor-mode {
+  background: #FFEAA7;
+  border-color: #D63031;
+  color: #D63031;
+}
+
+/* Impostor Stealth Banner Badge in Word Display - follows style of other players */
+.secret-word.impostor-stealth-badge {
+  background: transparent;
+  color: var(--ink-pure);
+  border: none;
+  box-shadow: none;
+  animation: none;
+}
+
+/* Dramatic Role Flash Modal */
+.impostor-role-flash-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 0.4s ease;
+}
+.impostor-role-flash-modal.fade-out {
+  opacity: 0;
+}
+.role-flash-card {
+  background: var(--bg-paper);
+  border: var(--line-bold);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
+  text-align: center;
+  max-width: 460px;
+  width: 90%;
+}
+.impostor-role-flash-modal.impostor .role-flash-card {
+  border-color: #D63031;
+}
+.role-flash-icon {
+  font-size: 54px;
+  margin-bottom: 8px;
+}
+.role-flash-badge {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  margin-bottom: 12px;
+}
+.impostor-role-flash-modal.impostor .role-flash-badge {
+  background: #FF7675;
+  color: #2D3436;
+}
+.impostor-role-flash-modal.regular .role-flash-badge {
+  background: #55EFC4;
+  color: #2D3436;
+}
+.role-flash-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  margin-bottom: 6px;
+}
+.role-flash-sub {
+  font-family: var(--font-comic);
+  font-size: 1.05rem;
+  color: var(--pencil-lead);
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+.role-flash-box {
+  background: var(--bg-subtle);
+  border: var(--line-main);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: center;
+}
+.category-tag {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pencil-lead);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.role-flash-inst {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-pure);
+  line-height: 1.4;
+}
+
+/* Impostor Active Turn Strip on Canvas */
+.impostor-turn-strip {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.turn-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: var(--line-thick);
+  border-radius: var(--radius-pill);
+  padding: 8px 20px;
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1rem;
+}
+.impostor-turn-strip.my-turn .turn-strip-inner {
+  background: #00B894;
+  color: #FFFFFF;
+  border-color: #000000;
+  box-shadow: 4px 4px 0px #000000;
+  animation: turnPulse 1.2s infinite alternate;
+}
+.impostor-turn-strip.waiting-turn .turn-strip-inner {
+  background: var(--bg-paper);
+  color: var(--ink-pure);
+  border-color: var(--ink-pure);
+}
+@keyframes turnPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.04); }
+}
+.turn-strip-timer {
+  background: var(--ink-pure);
+  color: #FFFFFF;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+.impostor-turn-strip.my-turn .turn-strip-timer {
+  background: #FDCB6E;
+  color: #000000;
+  border: 1.5px solid #000000;
+}
+.impostor-turn-strip.urgent-pulse .turn-strip-timer {
+  background: #D63031 !important;
+  color: #FFFFFF !important;
+  animation: timerBlink 0.4s infinite alternate;
+}
+@keyframes timerBlink {
+  0% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+/* Impostor Voting Phase Overlay */
+.impostor-voting-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 35;
+  animation: fadeIn 0.25s ease;
+}
+.voting-modal-card {
+  background: var(--bg-paper);
+  border: var(--line-bold);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
+  max-width: 620px;
+  width: 92%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.voting-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--ink-pure);
+  padding-bottom: 14px;
+}
+.voting-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.voting-modal-icon {
+  font-size: 32px;
+}
+.voting-modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  margin-bottom: 2px;
+}
+.voting-modal-subtitle {
+  font-family: var(--font-comic);
+  font-size: 0.9rem;
+  color: var(--pencil-lead);
+  font-weight: 700;
+}
+.voting-timer-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FF7675;
+  color: #FFFFFF;
+  border: 2px solid var(--ink-pure);
+  box-shadow: 2px 2px 0px var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+/* Candidate Grid */
+.voting-candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.voting-candidate-card {
+  background: var(--bg-paper);
+  border: 2.5px solid var(--ink-pure);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.voting-candidate-card:not(.is-self):hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-md);
+}
+.voting-candidate-card.selected {
+  background: #E8F8F5;
+  border-color: #00B894;
+  box-shadow: 3px 3px 0px #00B894;
+}
+.voting-candidate-card.is-self {
+  opacity: 0.7;
+  background: var(--bg-subtle);
+}
+.candidate-avatar-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--cand-color, #666);
+  border: 2px solid var(--ink-pure);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.candidate-name {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+.candidate-self-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pencil-lead);
+}
+.btn-cast-vote {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  background: #FDCB6E;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px var(--ink-pure);
+  transition: all 0.12s ease;
+}
+.btn-cast-vote:hover:not(:disabled) {
+  background: #E17055;
+  color: #FFFFFF;
+  transform: translate(-1px, -1px);
+}
+.btn-cast-vote.disabled {
+  background: var(--pencil-faint);
+  color: var(--pencil-medium);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-cast-vote.voted-success {
+  background: #00B894;
+  color: #FFFFFF;
+}
+
+/* Voting Status Bar */
+.voting-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2px solid var(--ink-pure);
+  padding-top: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.voting-count-pill {
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--ink-pure);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+/* Voting Result Box */
+.voting-result-box {
+  background: var(--bg-subtle);
+  border: var(--line-thick);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.voting-result-box.impostor-eliminated {
+  background: #E8F8F5;
+  border-color: #00B894;
+}
+.voting-result-box.innocent-eliminated {
+  background: #FDEDEC;
+  border-color: #D63031;
+}
+.voting-result-box.no-majority {
+  background: #FEF9E7;
+  border-color: #F1C40F;
+}
+.result-badge {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  background: #FFFFFF;
+  margin-bottom: 8px;
+}
+.result-headline {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  margin-bottom: 6px;
+}
+.result-details {
+  font-family: var(--font-comic);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pencil-lead);
+  margin-bottom: 12px;
+}
+.voting-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.vote-tally-pill {
+  font-size: 0.8rem;
+  background: #FFFFFF;
+  border: 1.5px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+}
+
+/* Impostor Game Over Overlay */
+.impostor-gameover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  animation: fadeIn 0.3s ease;
+}
+.impostor-gameover-card {
+  background: var(--bg-paper);
+  border: var(--line-bold);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-xl);
+  padding: 32px 36px;
+  max-width: 580px;
+  width: 92%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.impostor-win-banner {
+  border: var(--line-thick);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.impostor-win-banner.regulars-win {
+  background: #00B894;
+  color: #FFFFFF;
+  border-color: #000000;
+  box-shadow: 4px 4px 0px #000000;
+}
+.impostor-win-banner.impostor-win {
+  background: #D63031;
+  color: #FFFFFF;
+  border-color: #000000;
+  box-shadow: 4px 4px 0px #000000;
+}
+.win-banner-icon { font-size: 32px; }
+.win-banner-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+/* Impostor Identity Card */
+.impostor-identity-card {
+  background: var(--bg-subtle);
+  border: var(--line-main);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.identity-label {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--pencil-lead);
+  margin-bottom: 4px;
+}
+.identity-name-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.identity-name {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #D63031;
+}
+.secret-word-reveal {
+  font-family: var(--font-comic);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+}
+
+/* Leaderboard in Game Over */
+.leaderboard-heading {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  text-align: left;
+  margin-bottom: 8px;
+}
+.impostor-leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.leaderboard-player-row {
+  display: flex;
+  align-items: center;
+  background: var(--bg-paper);
+  border: 2px solid var(--ink-pure);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  box-shadow: 2px 2px 0px var(--ink-pure);
+  gap: 12px;
+}
+.leaderboard-player-row.is-impostor-row {
+  background: #FFF5F5;
+  border-color: #D63031;
+}
+.lb-rank {
+  font-size: 1.2rem;
+  font-weight: 800;
+  min-width: 28px;
+}
+.lb-user-info {
+  flex: 1;
+  text-align: left;
+}
+.lb-user-name {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  margin-right: 8px;
+}
+.lb-role-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--ink-pure);
+}
+.lb-role-tag.tag-impostor {
+  background: #FF7675;
+  color: #2D3436;
+}
+.lb-role-tag.tag-regular {
+  background: #55EFC4;
+  color: #2D3436;
+}
+.lb-breakdown {
+  font-size: 0.76rem;
+  color: var(--pencil-lead);
+  font-weight: 600;
+  margin-top: 2px;
+}
+.lb-score-wrap {
+  text-align: right;
+}
+.lb-score-val {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+}
+.lb-score-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--pencil-lead);
+  margin-left: 2px;
+}
+
+/* Impostor Guess & Host Stop Buttons on Turn Strip */
+.impostor-turn-strip {
+  gap: 8px;
+}
+.btn-host-stop-strip, .btn-voting-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #D63031;
+  color: #FFFFFF;
+  border: 2px solid #000000;
+  box-shadow: 2.5px 2.5px 0px #000000;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+}
+.btn-host-stop-strip:hover, .btn-voting-stop:hover {
+  background: #C0392B;
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+.btn-host-stop-strip:active, .btn-voting-stop:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.btn-impostor-guess {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFEAA7;
+  color: #D63031;
+  border: 2px solid #D63031;
+  box-shadow: 2.5px 2.5px 0px #000000;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  animation: turnPulse 1.4s infinite alternate;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.btn-impostor-guess:hover {
+  background: #FF7675;
+  color: #FFFFFF;
+  border-color: #000000;
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+
+.voting-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Impostor Guess Word Modal */
+.impostor-guess-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  animation: fadeIn 0.25s ease;
+}
+.impostor-guess-card {
+  background: var(--bg-paper);
+  border: var(--line-bold);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-xl);
+  padding: 32px 36px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.guess-card-icon {
+  font-size: 48px;
+  margin-bottom: 6px;
+}
+.guess-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #D63031;
+  margin-bottom: 8px;
+}
+.guess-card-desc {
+  font-family: var(--font-comic);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pencil-lead);
+  line-height: 1.4;
+  margin-bottom: 20px;
+}
+.impostor-guess-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.impostor-guess-input {
+  width: 100%;
+  background: var(--bg-subtle);
+  border: var(--line-thick);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  text-align: center;
+  outline: none;
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
+}
+.impostor-guess-input:focus {
+  border-color: #D63031;
+  background: #FFF5F5;
+}
+.guess-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.btn-guess-cancel {
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  background: var(--bg-paper);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px var(--ink-pure);
+}
+.btn-guess-cancel:hover {
+  background: var(--bg-subtle);
+  transform: translate(-1px, -1px);
+}
+.btn-guess-submit {
+  padding: 10px 24px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  background: #D63031;
+  color: #FFFFFF;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px var(--ink-pure);
+}
+.btn-guess-submit:hover {
+  background: #C0392B;
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4px 4px 0px var(--ink-pure);
+}
+

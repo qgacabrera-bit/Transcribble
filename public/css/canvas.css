@@ -1,0 +1,801 @@
+/* ==========================================================================
+   Left Section: Canvas & Taboo Clue Board
+   ========================================================================== */
+.canvas-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  border-radius: var(--radius-xl);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-md);
+  min-height: 0;
+}
+
+/* Taboo Guide Card (For Describers) */
+.taboo-guide-card {
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.taboo-target-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.taboo-label {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--pencil-lead);
+}
+
+.taboo-target-word {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #059669;
+  letter-spacing: 0.06em;
+  text-decoration: underline 3px #059669;
+  text-underline-offset: 4px;
+}
+
+.taboo-category-badge {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--bg-dark);
+  color: var(--paper-white);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--ink-pure);
+}
+
+.taboo-banned-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.taboo-banned-label {
+  font-family: var(--font-heading);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--accent-red);
+  letter-spacing: 0.04em;
+}
+
+.taboo-banned-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.taboo-banned-chip {
+  font-family: var(--font-comic);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #DC2626;
+  background: #FEE2E2;
+  border: 2px solid var(--ink-pure);
+  box-shadow: 2px 2px 0px #000000;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: line-through 2px #DC2626;
+}
+
+/* Blind Drawer Guidance Banner (For Drawer) */
+.drawer-guide-card {
+  background: var(--bg-subtle);
+  border: var(--line-thick);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.drawer-guide-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-role-badge {
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--paper-white);
+  background: var(--bg-dark);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+}
+
+.drawer-mystery-text {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  letter-spacing: 0.08em;
+  white-space: pre-wrap;
+}
+
+.drawer-guide-right {
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--pencil-lead);
+  font-weight: 700;
+}
+
+/* In-Canvas Quick Guess Form */
+.drawer-canvas-guess-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drawer-guess-input {
+  background: var(--bg-paper);
+  border: 2px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  outline: none;
+  width: 170px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.drawer-guess-input:focus {
+  border-color: var(--accent-amber);
+  box-shadow: 2px 2px 0px var(--ink-pure);
+}
+
+.btn-drawer-guess {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FDCB6E;
+  color: var(--ink-pure);
+  border: 2px solid var(--ink-pure);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-drawer-guess:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--ink-pure);
+}
+
+.btn-drawer-guess:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--ink-pure);
+}
+
+/* Canvas Top Meta Bar */
+.canvas-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+
+.active-tool-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-preview-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  background: var(--bg-paper);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: var(--line-main);
+  box-shadow: var(--shadow-sm);
+  cursor: default;
+}
+
+.tool-dropdown-arrow {
+  display: none;
+  font-size: 0.72rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.mobile-toolbar-header {
+  display: none;
+}
+
+.tool-preview-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1E1E1E;
+  border: 2px solid #000000;
+  box-shadow: 1px 1px 0px #000000;
+  transition: all 0.2s ease;
+}
+
+.drawer-status-chip {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  background: var(--bg-subtle);
+  border: var(--line-main);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+}
+
+.drawer-status-chip.is-drawing {
+  background: var(--bg-dark);
+  color: var(--paper-white);
+  animation: cartoonPulse 1.2s infinite alternate;
+}
+
+.canvas-meta-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  background: var(--bg-paper);
+  border: var(--line-main);
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-action-sm:hover {
+  background: var(--bg-subtle);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-action-sm.danger {
+  color: var(--accent-red);
+  background: var(--bg-paper);
+  border: 2px solid var(--accent-red);
+}
+
+.btn-action-sm.danger:hover {
+  background: var(--accent-red);
+  color: var(--paper-white);
+}
+
+/* Canvas Stage Wrapper (Sketchbook Frame) */
+.canvas-stage-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #FFFFFF;
+  border: var(--line-thick);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+#drawingCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.canvas-cursor {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #000000;
+  box-shadow: 0 0 0 1px #FFFFFF;
+  display: none;
+  z-index: 10;
+}
+
+.canvas-wipe-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #FFFFFF;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 15;
+}
+
+.canvas-wipe-overlay.active {
+  opacity: 1;
+}
+
+/* Screen Flash Overlay on Taboo Violation */
+.taboo-flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(239, 68, 68, 0.4),
+    rgba(239, 68, 68, 0.4) 15px,
+    rgba(255, 255, 255, 0.7) 15px,
+    rgba(255, 255, 255, 0.7) 30px
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 20;
+}
+
+.taboo-flash-overlay.active {
+  opacity: 1;
+}
+
+/* Guesser Read-Only Lock Overlay */
+.guesser-lock-overlay {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  pointer-events: none;
+  z-index: 12;
+  display: none;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.guesser-lock-overlay.active {
+  display: block;
+}
+
+.lock-card {
+  background: var(--bg-paper);
+  border: var(--line-thick);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lock-icon { font-size: 20px; }
+.lock-title {
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+}
+.lock-subtext { display: none; }
+
+/* Round End Overlay */
+.round-end-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.round-end-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.round-end-modal {
+  background: var(--bg-paper);
+  border: var(--line-bold);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-xl);
+  padding: 32px 42px;
+  text-align: center;
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 480px;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.round-end-badge {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--paper-white);
+  background: var(--bg-dark);
+  padding: 5px 16px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink-pure);
+  box-shadow: var(--shadow-sm);
+}
+
+.round-end-word {
+  font-family: var(--font-heading);
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #059669;
+  margin: 16px 0 8px 0;
+  text-decoration: underline 4px #059669;
+  text-underline-offset: 6px;
+}
+
+.round-end-subtext {
+  font-family: var(--font-comic);
+  font-size: 0.95rem;
+  color: var(--pencil-lead);
+  font-weight: 700;
+}
+
+/* Game Over Podium Overlay */
+.game-over-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.game-over-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.game-over-modal {
+  background: var(--bg-paper);
+  border: var(--line-bold);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-xl);
+  padding: 32px 42px;
+  text-align: center;
+  max-width: 480px;
+  width: 90%;
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trophy-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.game-over-title {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--ink-pure);
+  margin-bottom: 20px;
+}
+
+.podium-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  height: 140px;
+}
+
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 95px;
+}
+
+.podium-user-name {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.podium-score {
+  font-family: var(--font-comic);
+  font-size: 0.78rem;
+  color: var(--accent-amber);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.podium-bar {
+  width: 100%;
+  border-radius: 10px 10px 0 0;
+  border: 2.5px solid #000000;
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.3rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.podium-1 {
+  height: 100px;
+  background: var(--accent-amber);
+  color: var(--paper-white);
+  order: 2;
+}
+
+.podium-2 {
+  height: 75px;
+  background: var(--pencil-light);
+  color: var(--paper-white);
+  order: 1;
+}
+
+.podium-3 {
+  height: 55px;
+  background: #B45309;
+  color: var(--paper-white);
+  order: 3;
+}
+
+.btn-play-again {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--paper-white);
+  background: var(--bg-dark);
+  border: var(--line-main);
+  padding: 10px 28px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-play-again:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ==========================================================================
+   Art Materials Toolbar (Pencil & Drawing Kit)
+   ========================================================================== */
+.art-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-paper);
+  border: var(--line-main);
+  border-radius: var(--radius-lg);
+  padding: 8px 16px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  transition: opacity 0.2s ease;
+}
+
+.art-toolbar.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.toolbar-divider {
+  width: 2px;
+  height: 28px;
+  background: var(--ink-pure);
+  border-radius: 1px;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-label {
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--pencil-lead);
+  margin-right: 2px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  background: var(--bg-paper);
+  border: var(--line-main);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.tool-btn:hover {
+  background: var(--bg-subtle);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: var(--shadow-md);
+}
+
+.tool-btn.active {
+  background: var(--bg-dark);
+  color: var(--paper-white);
+  box-shadow: var(--shadow-md);
+}
+
+.size-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-subtle);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--ink-pure);
+}
+
+.size-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-pure);
+  border-radius: var(--radius-sm);
+}
+
+.size-btn:hover {
+  background: var(--bg-paper);
+}
+
+.size-btn.active {
+  background: var(--bg-dark);
+  color: var(--paper-white);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.size-indicator-dot {
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.dot-thin { width: 4px; height: 4px; }
+.dot-medium { width: 8px; height: 8px; }
+.dot-thick { width: 13px; height: 13px; }
+.dot-chunky { width: 18px; height: 18px; }
+
+/* Vibrant Drawing Palette Swatches */
+.palette-swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: var(--swatch-color);
+  position: relative;
+  border: 2.5px solid #000000;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.18);
+  box-shadow: var(--shadow-md);
+}
+
+.color-swatch.active {
+  transform: scale(1.22);
+  outline: 3px solid #000000;
+  outline-offset: 2px;
+  box-shadow: var(--shadow-md);
+}
+
+.color-picker-label {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+  border: 2.5px solid #000000;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease;
+}
+
+.color-picker-label:hover {
+  transform: scale(1.18);
+  box-shadow: var(--shadow-md);
+}
+
+.color-picker-label.active {
+  transform: scale(1.22);
+  outline: 3px solid #000000;
+  outline-offset: 2px;
+}
+
+#customColorInput {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
