@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.academyModeManager.init();
   }
 
+  if (typeof window.InkslaughtGame === 'function') {
+    window.inkslaughtManager = new window.InkslaughtGame();
+    window.inkslaughtManager.init();
+  }
+
   let currentUser = {
     id: null,
     username: 'Player',
@@ -2929,3 +2934,239 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateToolPreview();
 });
+
+// =============================================================================
+// Inkslaught Arcade Mode - Gesture Recognizer, Enemy Entities & Physics Loop
+// Modular JavaScript code for standalone execution and client integration
+// =============================================================================
+(function(global) {
+  'use strict';
+
+  if (typeof global.DollarRecognizer === 'undefined') {
+    class DollarRecognizer {
+      constructor() {
+        this.numPoints = 64;
+        this.squareSize = 250.0;
+        this.templates = [];
+        this.initTemplates();
+      }
+
+      initTemplates() {
+        // 1. Vertical Line
+        const vert = [];
+        for (let i = 0; i <= 20; i++) vert.push({ x: 125, y: 25 + (i / 20) * 200 });
+        this.addTemplate('Vertical Line', vert);
+
+        // 2. Horizontal Line
+        const horiz = [];
+        for (let i = 0; i <= 20; i++) horiz.push({ x: 25 + (i / 20) * 200, y: 125 });
+        this.addTemplate('Horizontal Line', horiz);
+
+        // 3. V-Shape
+        const vPts = [];
+        for (let i = 0; i <= 10; i++) vPts.push({ x: 30 + (i / 10) * 95, y: 40 + (i / 10) * 170 });
+        for (let i = 1; i <= 10; i++) vPts.push({ x: 125 + (i / 10) * 95, y: 210 - (i / 10) * 170 });
+        this.addTemplate('V-Shape', vPts);
+
+        // 4. Caret (^)
+        const caret = [];
+        for (let i = 0; i <= 10; i++) caret.push({ x: 30 + (i / 10) * 95, y: 210 - (i / 10) * 170 });
+        for (let i = 1; i <= 10; i++) caret.push({ x: 125 + (i / 10) * 95, y: 40 + (i / 10) * 170 });
+        this.addTemplate('Caret', caret);
+
+        // 5. Circle
+        const circle = [];
+        const numC = 36;
+        for (let i = 0; i <= numC; i++) {
+          const a = -Math.PI / 2 + (i / numC) * 2 * Math.PI;
+          circle.push({ x: 125 + 95 * Math.cos(a), y: 125 + 95 * Math.sin(a) });
+        }
+        this.addTemplate('Circle', circle);
+
+        // 6. Lightning Bolt
+        const bolt = [];
+        for (let i = 0; i <= 8; i++) bolt.push({ x: 170 - (i / 8) * 110, y: 25 + (i / 8) * 85 });
+        for (let i = 1; i <= 6; i++) bolt.push({ x: 60 + (i / 6) * 110, y: 110 });
+        for (let i = 1; i <= 8; i++) bolt.push({ x: 170 - (i / 8) * 115, y: 110 + (i / 8) * 115 });
+        this.addTemplate('Lightning Bolt', bolt);
+      }
+
+      addTemplate(name, points) {
+        const resampled = this.resample(points, this.numPoints);
+        const scaled = this.scale(resampled, this.squareSize);
+        const translated = this.translateToOrigin(scaled);
+        this.templates.push({ name, points: translated, rawPoints: points });
+      }
+
+      resample(points, n) {
+        if (!points || points.length === 0) return [];
+        if (points.length === 1) {
+          const out = [];
+          for (let i = 0; i < n; i++) out.push({ x: points[0].x, y: points[0].y });
+          return out;
+        }
+        const I = this.pathLength(points) / (n - 1);
+        let D = 0.0;
+        const newPoints = [{ x: points[0].x, y: points[0].y }];
+        const pts = points.slice();
+        for (let i = 1; i < pts.length; i++) {
+          const d = this.distance(pts[i - 1], pts[i]);
+          if (D + d >= I) {
+            const qx = pts[i - 1].x + ((I - D) / d) * (pts[i].x - pts[i - 1].x);
+            const qy = pts[i - 1].y + ((I - D) / d) * (pts[i].y - pts[i - 1].y);
+            const q = { x: qx, y: qy };
+            newPoints.push(q);
+            pts.splice(i, 0, q);
+            D = 0.0;
+          } else {
+            D += d;
+          }
+        }
+        while (newPoints.length < n) newPoints.push({ x: pts[pts.length - 1].x, y: pts[pts.length - 1].y });
+        return newPoints.slice(0, n);
+      }
+
+      pathLength(pts) {
+        let d = 0.0;
+        for (let i = 1; i < pts.length; i++) d += this.distance(pts[i - 1], pts[i]);
+        return d;
+      }
+
+      distance(p1, p2) {
+        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      boundingBox(pts) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of pts) {
+          minX = Math.min(minX, p.x);
+          minY = Math.min(minY, p.y);
+          maxX = Math.max(maxX, p.x);
+          maxY = Math.max(maxY, p.y);
+        }
+        return { x: minX, y: minY, width: Math.max(maxX - minX, 1), height: Math.max(maxY - minY, 1) };
+      }
+
+      scale(pts, size) {
+        const box = this.boundingBox(pts);
+        const is1D = (box.width / box.height < 0.25) || (box.height / box.width < 0.25);
+        const newPts = [];
+        for (const p of pts) {
+          let qx, qy;
+          if (is1D) {
+            const maxDim = Math.max(box.width, box.height);
+            qx = ((p.x - box.x) / maxDim) * size;
+            qy = ((p.y - box.y) / maxDim) * size;
+          } else {
+            qx = ((p.x - box.x) / box.width) * size;
+            qy = ((p.y - box.y) / box.height) * size;
+          }
+          newPts.push({ x: qx, y: qy });
+        }
+        return newPts;
+      }
+
+      centroid(pts) {
+        let x = 0.0, y = 0.0;
+        for (const p of pts) { x += p.x; y += p.y; }
+        return { x: x / pts.length, y: y / pts.length };
+      }
+
+      translateToOrigin(pts) {
+        const c = this.centroid(pts);
+        return pts.map(p => ({ x: p.x - c.x, y: p.y - c.y }));
+      }
+
+      pathDistance(pts1, pts2) {
+        let d = 0.0;
+        const n = Math.min(pts1.length, pts2.length);
+        for (let i = 0; i < n; i++) d += this.distance(pts1[i], pts2[i]);
+        return d / n;
+      }
+
+      recognize(rawPoints) {
+        if (!rawPoints || rawPoints.length < 8) return null;
+        const totalLen = this.pathLength(rawPoints);
+        if (totalLen < 28) return null;
+
+        const box = this.boundingBox(rawPoints);
+        const startPt = rawPoints[0];
+        const endPt = rawPoints[rawPoints.length - 1];
+        const startEndDist = this.distance(startPt, endPt);
+        const aspectHW = box.height / box.width;
+        const aspectWH = box.width / box.height;
+
+        const resampled = this.resample(rawPoints, this.numPoints);
+        const scaled = this.scale(resampled, this.squareSize);
+        const translated = this.translateToOrigin(scaled);
+        const reversed = translated.slice().reverse();
+
+        const isClosedLoop = (startEndDist / totalLen < 0.32) && (box.width > 22 && box.height > 22) && (aspectHW > 0.55 && aspectHW < 1.8);
+        const isVerticalDominant = (aspectHW > 2.4) && (box.width < 45 || aspectHW > 3.0);
+        const isHorizontalDominant = (aspectWH > 2.4) && (box.height < 45 || aspectWH > 3.0);
+
+        let bestDistance = Infinity;
+        let bestTemplate = null;
+
+        for (const tmpl of this.templates) {
+          const dForward = this.pathDistance(translated, tmpl.points);
+          const dReverse = this.pathDistance(reversed, tmpl.points);
+          let d = Math.min(dForward, dReverse);
+
+          if (tmpl.name === 'Circle') {
+            let bestCircleDist = Infinity;
+            for (let shift = 0; shift < this.numPoints; shift += 8) {
+              const shifted = translated.slice(shift).concat(translated.slice(0, shift));
+              const shiftedRev = reversed.slice(shift).concat(reversed.slice(0, shift));
+              const dF = this.pathDistance(shifted, tmpl.points);
+              const dR = this.pathDistance(shiftedRev, tmpl.points);
+              bestCircleDist = Math.min(bestCircleDist, dF, dR);
+            }
+            d = bestCircleDist;
+            if (isClosedLoop) d *= 0.55; else d *= 1.45;
+          } else if (tmpl.name === 'Vertical Line') {
+            if (isVerticalDominant) d *= 0.45;
+            if (isHorizontalDominant || isClosedLoop) d *= 2.5;
+          } else if (tmpl.name === 'Horizontal Line') {
+            if (isHorizontalDominant) d *= 0.45;
+            if (isVerticalDominant || isClosedLoop) d *= 2.5;
+          } else if (tmpl.name === 'V-Shape') {
+            const midY = translated[Math.floor(this.numPoints / 2)].y;
+            const endsY = (translated[0].y + translated[this.numPoints - 1].y) / 2;
+            if (midY > endsY + 15) d *= 0.7; else d *= 1.5;
+          } else if (tmpl.name === 'Caret') {
+            const midY = translated[Math.floor(this.numPoints / 2)].y;
+            const endsY = (translated[0].y + translated[this.numPoints - 1].y) / 2;
+            if (midY < endsY - 15) d *= 0.7; else d *= 1.5;
+          } else if (tmpl.name === 'Lightning Bolt') {
+            let reversals = 0;
+            for (let p = 2; p < resampled.length; p++) {
+              const dx1 = resampled[p - 1].x - resampled[p - 2].x;
+              const dx2 = resampled[p].x - resampled[p - 1].x;
+              if (dx1 * dx2 < -10) reversals++;
+            }
+            if (reversals >= 1) d *= 0.75;
+          }
+
+          if (d < bestDistance) {
+            bestDistance = d;
+            bestTemplate = tmpl;
+          }
+        }
+
+        if (!bestTemplate) return null;
+        const halfDiagonal = 0.5 * Math.sqrt(this.squareSize * this.squareSize * 2);
+        const score = Math.max(0, 1.0 - (bestDistance / halfDiagonal));
+        return (score >= 0.55) ? { name: bestTemplate.name, score } : null;
+      }
+    }
+
+    global.DollarRecognizer = DollarRecognizer;
+  }
+
+  // Ensure Enemy and InkslaughtGame are globally accessible
+  global.InkslaughtEnemy = global.InkslaughtEnemy || null;
+  global.InkslaughtGame = global.InkslaughtGame || null;
+
+})(typeof window !== 'undefined' ? window : this);

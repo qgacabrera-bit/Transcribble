@@ -3265,8 +3265,9 @@ body:has(#landingOverlay:not(.hidden)) .app-container,
 }
 
 .solo-item-zen.expanded .solo-item-extended,
-.solo-item-academy.expanded .solo-item-extended {
-  max-height: 340px;
+.solo-item-academy.expanded .solo-item-extended,
+.solo-item-inkslaught.expanded .solo-item-extended {
+  max-height: 480px;
   opacity: 1;
   padding: 10px 14px 14px 14px;
   border-top: 1.5px dashed #CBD5E1;
@@ -3307,6 +3308,20 @@ body:has(#landingOverlay:not(.hidden)) .app-container,
 .solo-item-academy.selected .solo-item-extended {
   background: #EEF2FF !important;
   border-top-color: #C7D2FE !important;
+}
+
+.solo-item-inkslaught.selected {
+  background: #FEF2F2 !important;
+  border-color: #DC2626 !important;
+}
+
+.solo-item-inkslaught.selected .solo-item-title {
+  color: #B91C1C !important;
+}
+
+.solo-item-inkslaught.selected .solo-item-extended {
+  background: #FEF2F2 !important;
+  border-top-color: #FECACA !important;
 }
 
 /* Unselected clickable solo items */

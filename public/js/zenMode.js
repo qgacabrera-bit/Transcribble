@@ -650,6 +650,7 @@ class ZenModeManager {
     // Mode Picker Selection & Highlighting
     const soloItemZen = document.getElementById('soloItemZen');
     const soloItemAcademy = document.getElementById('soloItemAcademy');
+    const soloItemInkslaught = document.getElementById('soloItemInkslaught');
     const btnPlayZenMode = document.getElementById('btnPlayZenMode');
     const soloStartBtnIcon = document.getElementById('soloStartBtnIcon');
     const soloStartBtnText = document.getElementById('soloStartBtnText');
@@ -658,28 +659,31 @@ class ZenModeManager {
 
     const selectSoloMode = (mode) => {
       window.selectedSoloMode = mode;
+      if (soloItemZen) {
+        soloItemZen.classList.toggle('selected', mode === 'zen');
+        soloItemZen.classList.toggle('expanded', mode === 'zen');
+        soloItemZen.setAttribute('aria-expanded', mode === 'zen' ? 'true' : 'false');
+      }
+      if (soloItemAcademy) {
+        soloItemAcademy.classList.toggle('selected', mode === 'academy');
+        soloItemAcademy.classList.toggle('expanded', mode === 'academy');
+        soloItemAcademy.setAttribute('aria-expanded', mode === 'academy' ? 'true' : 'false');
+      }
+      if (soloItemInkslaught) {
+        soloItemInkslaught.classList.toggle('selected', mode === 'inkslaught');
+        soloItemInkslaught.classList.toggle('expanded', mode === 'inkslaught');
+        soloItemInkslaught.setAttribute('aria-expanded', mode === 'inkslaught' ? 'true' : 'false');
+      }
+
       if (mode === 'zen') {
-        if (soloItemZen) {
-          soloItemZen.classList.add('selected', 'expanded');
-          soloItemZen.setAttribute('aria-expanded', 'true');
-        }
-        if (soloItemAcademy) {
-          soloItemAcademy.classList.remove('selected', 'expanded');
-          soloItemAcademy.setAttribute('aria-expanded', 'false');
-        }
         if (soloStartBtnIcon) soloStartBtnIcon.textContent = '✨';
-        if (soloStartBtnText) soloStartBtnText.textContent = 'Start';
+        if (soloStartBtnText) soloStartBtnText.textContent = 'Start Zen Mode';
       } else if (mode === 'academy') {
-        if (soloItemAcademy) {
-          soloItemAcademy.classList.add('selected', 'expanded');
-          soloItemAcademy.setAttribute('aria-expanded', 'true');
-        }
-        if (soloItemZen) {
-          soloItemZen.classList.remove('selected', 'expanded');
-          soloItemZen.setAttribute('aria-expanded', 'false');
-        }
         if (soloStartBtnIcon) soloStartBtnIcon.textContent = '🎓';
         if (soloStartBtnText) soloStartBtnText.textContent = 'Start Academy';
+      } else if (mode === 'inkslaught') {
+        if (soloStartBtnIcon) soloStartBtnIcon.textContent = '⚔️';
+        if (soloStartBtnText) soloStartBtnText.textContent = 'Start Inkslaught';
       }
     };
 
@@ -703,6 +707,16 @@ class ZenModeManager {
       });
     }
 
+    if (soloItemInkslaught) {
+      soloItemInkslaught.addEventListener('click', () => selectSoloMode('inkslaught'));
+      soloItemInkslaught.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectSoloMode('inkslaught');
+        }
+      });
+    }
+
     // Initialize initial selection
     selectSoloMode(window.selectedSoloMode);
 
@@ -711,6 +725,8 @@ class ZenModeManager {
       btnPlayZenMode.addEventListener('click', () => {
         if (window.selectedSoloMode === 'academy' && window.academyModeManager) {
           window.academyModeManager.open();
+        } else if (window.selectedSoloMode === 'inkslaught' && window.inkslaughtManager) {
+          window.inkslaughtManager.open();
         } else {
           this.open();
         }

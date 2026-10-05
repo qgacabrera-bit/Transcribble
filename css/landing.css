@@ -243,12 +243,29 @@
   border-top: 0px solid transparent;
 }
 
-.solo-item-zen.expanded .solo-item-extended {
-  max-height: 320px;
+.solo-item-zen.expanded .solo-item-extended,
+.solo-item-academy.expanded .solo-item-extended,
+.solo-item-inkslaught.expanded .solo-item-extended {
+  max-height: 480px;
   opacity: 1;
   padding: 10px 14px 14px 14px;
   border-top: 1.5px dashed #CBD5E1;
   background: #F8FAFC;
+}
+
+.solo-item-inkslaught.selected {
+  background: #FEF2F2 !important;
+  border-color: #DC2626 !important;
+  box-shadow: 3px 3px 0px var(--ink-pure) !important;
+}
+
+.solo-item-inkslaught.selected .solo-item-title {
+  color: #B91C1C !important;
+}
+
+.solo-item-inkslaught.selected .solo-item-extended {
+  background: #FEF2F2 !important;
+  border-top-color: #FECACA !important;
 }
 
 .zen-explainer-summary {

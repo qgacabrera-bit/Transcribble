@@ -15,6 +15,7 @@
     rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2.6">
   <link rel="stylesheet" href="css/academy.css?v=1.0">
+  <link rel="stylesheet" href="css/inkslaught.css?v=1.0">
 </head>
 
 <body>
@@ -181,7 +182,54 @@
               </div>
             </div>
 
-            <!-- Mode 2: Academy Mode (Educational Progressive Drawing Stages) -->
+            <!-- Mode 2: Inkslaught Arcade (Endless Drawing Survival) -->
+            <div class="solo-picker-item solo-item-inkslaught" id="soloItemInkslaught" tabindex="0" role="button"
+              aria-expanded="false">
+              <div class="solo-item-header">
+                <div class="solo-item-title-group">
+                  <span class="solo-item-icon">⚔️</span>
+                  <div class="solo-item-text">
+                    <span class="solo-item-title">Inkslaught Arcade</span>
+                    <span class="solo-item-subtitle">Endless drawing survival</span>
+                  </div>
+                </div>
+                <div class="solo-item-meta">
+                  <span class="mode-tag" style="background:#EF4444;color:#FFF;border:1.5px solid #000;font-weight:800;padding:2px 8px;border-radius:12px;font-size:0.7rem;">NEW</span>
+                  <span class="solo-chevron" aria-hidden="true">▼</span>
+                </div>
+              </div>
+
+              <!-- Extended container: shows specifically how Inkslaught Mode works -->
+              <div class="solo-item-extended" id="inkslaughtModeExtended">
+                <div class="zen-mode-explainer">
+                  <p class="zen-explainer-summary">
+                    The canvas is under attack. An endless horde is rushing your margins from the right. Sketch the matching symbols as fast as you can to erase them before they ruin the page.
+                  </p>
+                  <div class="zen-mechanics-list">
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">⚔️</span>
+                      <div class="mech-content">
+                        <strong>Draw to Destroy:</strong> Flick quick lines, circles, V-shapes, and lightning bolts to strike down enemies.
+                      </div>
+                    </div>
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">⚡</span>
+                      <div class="mech-content">
+                        <strong>Escalating Chaos:</strong> The longer you last, the faster they spawn. Watch out for heavy enemies that take multiple consecutive strokes to erase.
+                      </div>
+                    </div>
+                    <div class="zen-mechanic-row">
+                      <span class="mech-bullet">🏆</span>
+                      <div class="mech-content">
+                        <strong>Beat Your Best:</strong> Defend the sketchbook as long as possible to rack up points and set a new high score.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode 3: Academy Mode (Educational Progressive Drawing Stages) -->
             <div class="solo-picker-item solo-item-academy" id="soloItemAcademy" tabindex="0" role="button"
               aria-expanded="false">
               <div class="solo-item-header">
@@ -193,6 +241,7 @@
                   </div>
                 </div>
                 <div class="solo-item-meta">
+                  <span class="mode-tag" style="background:#8B5CF6;color:#FFF;border:1.5px solid #000;font-weight:800;padding:2px 8px;border-radius:12px;font-size:0.7rem;">BETA</span>
                   <span class="solo-chevron" aria-hidden="true">▼</span>
                 </div>
               </div>
@@ -223,30 +272,13 @@
                 </div>
               </div>
             </div>
-
-            <!-- Mode 3: Coming Soon -->
-            <div class="solo-picker-item solo-picker-locked" title="Daily Prompt - Coming Soon!">
-              <div class="solo-item-header">
-                <div class="solo-item-title-group">
-                  <span class="solo-item-icon">📅</span>
-                  <div class="solo-item-text">
-                    <span class="solo-item-title">Daily Prompt</span>
-                    <span class="solo-item-subtitle">New community theme each day</span>
-                  </div>
-                </div>
-                <div class="solo-item-meta">
-                  <div class="mode-lock-overlay-inline">🔒</div>
-                  <span class="mode-tag mode-tag-soon">Coming Soon</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Start Action (where 'play zen mode' button was) -->
           <div class="zen-card-action-wrap">
             <button type="button" class="btn-landing-zen" id="btnPlayZenMode">
               <span class="landing-btn-icon" id="soloStartBtnIcon">✨</span>
-              <span class="landing-btn-text" id="soloStartBtnText">Start</span>
+              <span class="landing-btn-text" id="soloStartBtnText">Start Zen Mode</span>
               <span class="join-arrow">→</span>
             </button>
           </div>
@@ -300,7 +332,8 @@
                       <ul class="post-it-list">
                         <li><strong>Single Player Modes:</strong> Play solo anytime! Enjoy relaxing symmetry in
                           <strong>Zen Mode</strong> or test your skills in the brand new <strong>Drawing
-                            Academy</strong>!</li>
+                            Academy</strong>!
+                        </li>
                         <li><strong>Drawing Academy(Beta):</strong> Master drawing through 4 escalating tiers with
                           instant pixel accuracy scoring and helpful guides!</li>
                         <li><strong>Impostor Mode:</strong> One secret faker doesn't know the word! Take turns
@@ -757,6 +790,232 @@
         <button type="button" class="btn-modal-action btn-modal-exit" id="btnAcademyModalExit">
           <span>🏠</span><span>Exit</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Inkslaught Arcade Mode (Endless Drawing Defense Studio)
+       ========================================================================== -->
+  <div class="inkslaught-mode-view hidden" id="inkslaughtModeView" style="display: none;">
+    <!-- Inkslaught Header -->
+    <header class="inkslaught-header">
+      <div class="inkslaught-header-left">
+        <img src="assets/transcribble-logo.png" alt="Transcribble" class="inkslaught-header-logo" id="inkslaughtLogo"
+          title="Transcribble - Click to return Home">
+        <div class="inkslaught-title-group">
+          <div class="inkslaught-badge-wrap">
+            <span class="inkslaught-badge">⚔️ INKSLAUGHT</span>
+            <span class="inkslaught-badge-pill">Arcade Defense</span>
+          </div>
+          <span class="inkslaught-subtitle">Draw symbols to destroy incoming enemies before they breach the wall!</span>
+        </div>
+      </div>
+
+      <div class="inkslaught-header-center">
+        <div class="inkslaught-stat-pill stat-survival" title="Survival Time">
+          <span>⏱️</span>
+          <span id="inkslaughtTimeDisplay">00:00</span>
+        </div>
+        <div class="inkslaught-stat-pill stat-phase" title="Current Wave Phase">
+          <span>⚡</span>
+          <span id="inkslaughtPhaseDisplay">Phase 1: Inklings</span>
+        </div>
+        <div class="inkslaught-stat-pill stat-exp" title="Ink EXP to Next Spell Upgrade">
+          <span>✨</span>
+          <span id="inkslaughtExpDisplay">Lv 1 (0%)</span>
+        </div>
+        <div class="inkslaught-stat-pill stat-score" title="Current Score">
+          <span>🏆</span>
+          <span id="inkslaughtScoreDisplay">0</span>
+        </div>
+        <div class="inkslaught-stat-pill stat-high" title="Personal Best High Score">
+          <span>👑</span>
+          <span id="inkslaughtHighScoreDisplay">High: 0</span>
+        </div>
+      </div>
+
+      <div class="inkslaught-header-right">
+        <button type="button" class="btn-inkslaught-action" id="btnInkslaughtSound" title="Toggle Sound">
+          <span id="inkslaughtSoundIcon">🔊</span>
+        </button>
+        <button type="button" class="btn-inkslaught-action" id="btnInkslaughtRestartTop" title="Restart Game">
+          <span>🔄</span>
+          <span>Restart</span>
+        </button>
+        <button type="button" class="btn-inkslaught-action btn-inkslaught-exit" id="btnInkslaughtExit" title="Return to Home Screen">
+          <span>🏠</span>
+          <span>Back to Home</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Workstation Area -->
+    <div class="inkslaught-workstation">
+      <div class="inkslaught-main-area">
+        <!-- Left Grimoire Sidebar -->
+        <aside class="inkslaught-grimoire-sidebar" id="inkslaughtGrimoireSidebar">
+          <div class="grimoire-header">
+            <div class="grimoire-title">
+              <span class="grimoire-book-icon">📖</span>
+              <span class="grimoire-title-text">GRIMOIRE</span>
+            </div>
+            <button type="button" class="btn-grimoire-swap" id="btnGrimoireSwapLoadout" title="Change Equipped Spells">
+              <span>⚙️</span>
+              <span>Spells</span>
+            </button>
+          </div>
+
+          <!-- 3 Equipped Spell Cards Container -->
+          <div class="grimoire-spells-list" id="grimoireSpellsList">
+            <!-- Dynamically populated with the 3 equipped spells -->
+          </div>
+
+          <!-- Active Runic Sequence Display -->
+          <div class="grimoire-sequence-box">
+            <div class="sequence-header">
+              <span class="sequence-title">RUNIC SEQUENCE:</span>
+              <button type="button" class="btn-clear-sequence" id="btnClearSequence" title="Clear entered runes">Clear</button>
+            </div>
+            <div class="sequence-slots" id="grimoireSequenceSlots">
+              <div class="rune-slot empty" id="runeSlot0">?</div>
+              <div class="rune-slot empty" id="runeSlot1">?</div>
+              <div class="rune-slot empty" id="runeSlot2">?</div>
+              <div class="rune-slot empty" id="runeSlot3">?</div>
+            </div>
+          </div>
+
+          <!-- Dedicated Runic Inking Pad -->
+          <div class="grimoire-pad-wrap">
+            <div class="grimoire-pad-label">
+              <span>✍️ RUNIC SIGNING PAD</span>
+              <span class="grimoire-pad-hint">Draw 4 signs here</span>
+            </div>
+            <div class="grimoire-canvas-container">
+              <canvas class="inkslaught-skill-canvas" id="inkslaughtSkillCanvas" width="220" height="150"></canvas>
+              <div class="grimoire-pad-watermark" id="skillPadWatermark">Flick Runes</div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Center/Right: Battlefield Canvas Wrap -->
+        <div class="inkslaught-canvas-wrap" id="inkslaughtCanvasWrap">
+          <canvas class="inkslaught-canvas" id="inkslaughtCanvas" width="1200" height="800"></canvas>
+
+          <!-- Pre-Game Grimoire Loadout Selector Modal -->
+          <div class="inkslaught-modal-overlay hidden" id="inkslaughtLoadoutModal">
+            <div class="inkslaught-modal-card loadout-card">
+              <div class="inkslaught-modal-icon">📖</div>
+              <h2 class="inkslaught-modal-title">CHOOSE YOUR GRIMOIRE</h2>
+              <p class="inkslaught-modal-subtitle">Pick <strong>3 arcane ink spells</strong> to equip for your survival run.</p>
+
+              <div class="loadout-spells-grid" id="loadoutSpellsGrid">
+                <!-- 5 Spells populated dynamically -->
+              </div>
+
+              <div class="loadout-status-bar">
+                <span id="loadoutCountText">Selected: 3 of 3 Spells</span>
+              </div>
+
+              <div class="inkslaught-modal-actions">
+                <button type="button" class="btn-modal-restart" id="btnConfirmLoadout">
+                  <span>⚔️</span>
+                  <span>Enter Inkslaught</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spell Level Up Modal -->
+          <div class="inkslaught-modal-overlay hidden" id="inkslaughtLevelUpModal">
+            <div class="inkslaught-modal-card levelup-card">
+              <div class="inkslaught-modal-icon">⚡</div>
+              <h2 class="inkslaught-modal-title">SPELL LEVEL UP!</h2>
+              <p class="inkslaught-modal-subtitle">Your ink mastery grew. Choose an equipped spell to upgrade to the next tier:</p>
+
+              <div class="levelup-options-grid" id="levelupOptionsGrid">
+                <!-- Upgrades populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Game Over Modal Overlay -->
+          <div class="inkslaught-modal-overlay hidden" id="inkslaughtGameOverModal">
+            <div class="inkslaught-modal-card">
+              <div class="inkslaught-modal-icon">💥</div>
+              <h2 class="inkslaught-modal-title">CITY WALL BREACHED!</h2>
+              <p class="inkslaught-modal-subtitle">The ink creatures invaded your defenses. Outstanding effort!</p>
+
+              <div class="inkslaught-stats-grid">
+                <div class="inkslaught-stat-box">
+                  <span class="inkslaught-stat-label">Final Score</span>
+                  <span class="inkslaught-stat-val val-score" id="inkModalScore">0</span>
+                </div>
+                <div class="inkslaught-stat-box">
+                  <span class="inkslaught-stat-label">High Score</span>
+                  <span class="inkslaught-stat-val val-high" id="inkModalHigh">0</span>
+                  <div class="inkslaught-new-high-badge hidden" id="inkModalNewHigh">NEW RECORD!</div>
+                </div>
+                <div class="inkslaught-stat-box">
+                  <span class="inkslaught-stat-label">Survival Time</span>
+                  <span class="inkslaught-stat-val" id="inkModalTime">00:00</span>
+                </div>
+                <div class="inkslaught-stat-box">
+                  <span class="inkslaught-stat-label">Enemies Vanquished</span>
+                  <span class="inkslaught-stat-val" id="inkModalKills">0</span>
+                </div>
+              </div>
+
+              <div class="inkslaught-modal-actions">
+                <button type="button" class="btn-modal-restart" id="btnInkslaughtRestart">
+                  <span>⚔️</span>
+                  <span>Play Again</span>
+                </button>
+                <button type="button" class="btn-modal-exit" id="btnInkslaughtModalExit">
+                  <span>🏠</span>
+                  <span>Return to Lobby</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestures Reference Quick-Bar -->
+      <div class="inkslaught-gestures-bar" id="inkslaughtGesturesBar">
+        <span class="gesture-bar-title">⚡ Gestures:</span>
+        <div class="gesture-pill pill-vert" title="Vertical Line: Draw top to bottom or bottom to top">
+          <span class="gesture-pill-icon">|</span>
+          <span>Vertical Line</span>
+        </div>
+        <div class="gesture-pill pill-horiz" title="Horizontal Line: Draw left to right or right to left">
+          <span class="gesture-pill-icon">—</span>
+          <span>Horizontal Line</span>
+        </div>
+        <div class="gesture-pill pill-caret" title="Caret: Draw upward then downward (^)">
+          <span class="gesture-pill-icon">^</span>
+          <span>Caret</span>
+        </div>
+        <div class="gesture-pill pill-v" title="V-Shape: Draw downward then upward (V)">
+          <span class="gesture-pill-icon">V</span>
+          <span>V-Shape</span>
+        </div>
+        <div class="gesture-pill pill-circle" title="Circle: Draw a closed circular loop (○)">
+          <span class="gesture-pill-icon">○</span>
+          <span>Circle</span>
+        </div>
+        <div class="gesture-pill pill-bolt" title="Lightning Bolt: Draw a zig-zag slash (⚡)">
+          <span class="gesture-pill-icon">⚡</span>
+          <span>Lightning Bolt</span>
+        </div>
+        <div class="gesture-pill pill-star" title="Star: Draw a 5-pointed continuous star (★)">
+          <span class="gesture-pill-icon">★</span>
+          <span>Star</span>
+        </div>
+        <div class="gesture-pill pill-ampersand" title="Ampersand: Draw a continuous calligraphic loop (&amp;)">
+          <span class="gesture-pill-icon">&amp;</span>
+          <span>Ampersand</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1345,6 +1604,7 @@
   <script src="js/zenMode.js?v=2.6"></script>
   <script src="js/academyLevels.js?v=1.0"></script>
   <script src="js/academyMode.js?v=1.0"></script>
+  <script src="js/inkslaughtMode.js?v=1.0"></script>
   <script src="client.js?v=2.6"></script>
 </body>
 
