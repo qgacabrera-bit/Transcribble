@@ -101,6 +101,19 @@
         gain.connect(audioCtx.destination);
         osc.start(now);
         osc.stop(now + 0.25);
+      } else if (type === 'pop') {
+        // Comic balloon pop sound
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(820, now + 0.07);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
       }
     } catch (e) {
       console.warn('Audio playback error:', e);

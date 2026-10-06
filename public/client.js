@@ -294,6 +294,339 @@ document.addEventListener('DOMContentLoaded', () => {
   window.showToast = showToast;
 
   /**
+   * =========================================================================
+   * Creative Comic Action Burst ("BLAM!") Effect
+   * Snappy, randomly-rotating onomatopoeia starburst popping on the side of
+   * chosen options to playfully confirm selection.
+   * =========================================================================
+   */
+  let activeComicBurstEl = null;
+  let comicBurstTimeout = null;
+
+  const COMIC_BURST_WORDS = {
+    classic: ['BLAM!', 'DRAW!', 'POW!', 'BAM!', 'INKED!'],
+    impostor: ['BLAM!', 'SNEAK!', 'POW!', 'GOTCHA!', 'BAM!'],
+    locked: ['LOCKED!', 'SOON!', 'ZAP!', 'HOLD!'],
+    solo: ['BLAM!', 'ZEN!', 'FLOW!', 'POW!', 'SKETCH!']
+  };
+
+  function showComicBurst(targetElement, config = {}) {
+    if (!targetElement) return;
+
+    // Clean up any existing burst immediately
+    if (activeComicBurstEl) {
+      try { activeComicBurstEl.remove(); } catch (e) {}
+      activeComicBurstEl = null;
+    }
+    if (comicBurstTimeout) {
+      clearTimeout(comicBurstTimeout);
+      comicBurstTimeout = null;
+    }
+
+    // Play punchy comic pop sound
+    if (typeof window.playSound === 'function') {
+      window.playSound('pop');
+    }
+
+    const modeKey = config.mode || 'classic';
+    const wordList = COMIC_BURST_WORDS[modeKey] || COMIC_BURST_WORDS.classic;
+    const defaultWord = wordList[Math.floor(Math.random() * wordList.length)];
+
+    const word = config.word || defaultWord;
+    const subtext = config.subtext || 'SELECTED! ★';
+    const subClass = config.subClass || (modeKey === 'impostor' ? 'sub-impostor' : (modeKey === 'locked' ? 'sub-locked' : 'sub-classic'));
+    const burstColor = config.fillColor || (modeKey === 'locked' ? '#FEE2E2' : '#FFE600');
+
+    // Creative random rotation between -16deg and +16deg (avoiding near-zero for visible comic tilt)
+    const sign = Math.random() < 0.5 ? -1 : 1;
+    const rot = (sign * (6 + Math.random() * 11)).toFixed(1);
+
+    const rect = targetElement.getBoundingClientRect();
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const scrollX = window.scrollX || window.pageXOffset || 0;
+
+    const burstW = 76;
+    const burstH = 60;
+
+    let left = rect.right - 18 + scrollX;
+    if (left + burstW > window.innerWidth - 8) {
+      left = rect.left - burstW + 18 + scrollX;
+    }
+    let top = rect.top - 24 + scrollY;
+    if (top < scrollY + 8) {
+      top = rect.bottom - 10 + scrollY;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'comic-blam-container';
+    container.style.left = `${left}px`;
+    container.style.top = `${top}px`;
+
+    container.innerHTML = `
+      <div class="comic-blam-wrapper" style="--blam-rot: ${rot}deg;">
+        <span class="blam-action-dash dash-1"></span>
+        <span class="blam-action-dash dash-2"></span>
+        <span class="blam-action-dash dash-3"></span>
+        <span class="blam-action-dash dash-4"></span>
+        <div class="comic-blam-burst">
+          <svg class="blam-starburst-svg" viewBox="0 0 160 130" width="76" height="60">
+            <defs>
+              <pattern id="blamDots_${Date.now()}" x="0" y="0" width="5" height="5" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.2" fill="#000000" opacity="0.75" />
+              </pattern>
+            </defs>
+            <!-- Halftone Dot Drop Shadow Starburst -->
+            <polygon 
+              points="80,6 94,30 120,20 114,46 148,46 128,70 156,90 124,96 134,124 102,110 82,128 70,106 42,122 48,94 14,88 38,68 12,46 44,44 36,18 64,28" 
+              transform="translate(2.5, 2.5)"
+              fill="#000000" opacity="0.25" />
+            <!-- Solid Black Shadow Starburst -->
+            <polygon 
+              points="80,6 94,30 120,20 114,46 148,46 128,70 156,90 124,96 134,124 102,110 82,128 70,106 42,122 48,94 14,88 38,68 12,46 44,44 36,18 64,28" 
+              transform="translate(2.5, 2.5)"
+              fill="#000000" />
+            <!-- Main Starburst Body -->
+            <polygon 
+              points="80,6 94,30 120,20 114,46 148,46 128,70 156,90 124,96 134,124 102,110 82,128 70,106 42,122 48,94 14,88 38,68 12,46 44,44 36,18 64,28" 
+              fill="${burstColor}" 
+              stroke="#000000" 
+              stroke-width="2.2" 
+              stroke-linejoin="miter" />
+          </svg>
+          <div class="blam-text-layer">
+            <span class="blam-word">${escapeHTML(word)}</span>
+            <span class="blam-sub ${subClass}">${escapeHTML(subtext)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+    activeComicBurstEl = container;
+
+    // Auto dismiss after 1.8 seconds with punchy shrink animation
+    comicBurstTimeout = setTimeout(() => {
+      dismissComicBurst();
+    }, 1800);
+  }
+
+  function dismissComicBurst() {
+    if (!activeComicBurstEl) return;
+    const el = activeComicBurstEl;
+    activeComicBurstEl = null;
+    if (comicBurstTimeout) {
+      clearTimeout(comicBurstTimeout);
+      comicBurstTimeout = null;
+    }
+    const wrapper = el.querySelector('.comic-blam-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('blam-closing');
+    }
+    setTimeout(() => {
+      try { el.remove(); } catch (e) {}
+    }, 220);
+  }
+
+  const showComicBalloon = showComicBurst;
+  const dismissComicBalloon = dismissComicBurst;
+  let liveOpenRooms = [];
+  function renderLandingRoomOptions() {}
+
+  window.showComicBalloon = showComicBurst;
+  window.showComicBurst = showComicBurst;
+  window.dismissComicBalloon = dismissComicBurst;
+  window.dismissComicBurst = dismissComicBurst;
+  window.renderLandingRoomOptions = renderLandingRoomOptions;
+
+  /**
+   * =========================================================================
+   * Matchmaking Modal & 10-Second Waiting System
+   * If a room with the requested mode does not exist, but alternative rooms do,
+   * offers the player to join the alternative room, wait 10s, or create their own.
+   * =========================================================================
+   */
+    /**
+   * =========================================================================
+   * Floating Top-Center Matchmaker Window with Animated Perimeter Border Timer
+   * Replaces large center modals with a sleek top-center floating window
+   * indicating the 10-second countdown along the border for the user's choice:
+   * - Option 1: Join Random / Active Room in Other Mode
+   * - Option 2: Create Own Room
+   * =========================================================================
+   */
+  let matchmakingCountdownInterval = null;
+
+  function openMatchmakingModal(data) {
+    const banner = document.getElementById('floatingMatchmakerBanner');
+    if (!banner) return;
+
+    dismissComicBalloon();
+
+    const preferredMode = (data && data.preferredMode === 'impostor') ? 'impostor' : (window.selectedGameMode || 'classic');
+    const preferredModeName = (preferredMode === 'impostor') ? 'Impostor' : 'Classic';
+
+    const titleEl = document.getElementById('floatingMainTitle');
+    const noteEl = document.getElementById('floatingSubNote');
+    const timerValEl = document.getElementById('floatingTimerVal');
+    const borderProgress = document.getElementById('floatingBorderProgress');
+    const btnJoin = document.getElementById('btnFloatingJoinOpt');
+    const joinLabel = document.getElementById('floatingJoinOptLabel');
+    const btnCreate = document.getElementById('btnFloatingCreateOpt');
+    const createLabel = document.getElementById('floatingCreateOptLabel');
+    const btnClose = document.getElementById('btnFloatingClose');
+
+    if (titleEl) titleEl.textContent = 'Trying to find an open room...';
+    if (borderProgress) {
+      borderProgress.classList.remove('urgent');
+      borderProgress.style.strokeDashoffset = '0';
+    }
+
+    if (data && data.alternativeRooms && data.alternativeRooms.length > 0) {
+      const alt = data.alternativeRooms[0];
+      const altModeName = (alt.mode === 'impostor') ? 'Impostor' : 'Classic';
+      if (noteEl) noteEl.textContent = 'Room ' + alt.id + ' is active in ' + altModeName + ' Mode (' + alt.playerCount + '/' + alt.maxPlayers + ')';
+      if (joinLabel) joinLabel.textContent = 'Join ' + altModeName + ' Room (' + alt.id + ')';
+
+      if (btnJoin) {
+        btnJoin.onclick = () => {
+          clearInterval(matchmakingCountdownInterval);
+          closeMatchmakingModal();
+          setLandingLoading(true, 'Joining ' + altModeName + ' room ' + alt.id + '...');
+          const username = getValidatedUsername();
+          if (username) {
+            socket.emit('join-random-match', {
+              username,
+              sessionToken,
+              directJoinRoomId: alt.id
+            });
+          }
+        };
+      }
+    } else {
+      if (noteEl) noteEl.textContent = 'No ' + preferredModeName + ' rooms right now. Auto-hosting soon...';
+      if (joinLabel) joinLabel.textContent = 'Join Random Room';
+
+      if (btnJoin) {
+        btnJoin.onclick = () => {
+          clearInterval(matchmakingCountdownInterval);
+          closeMatchmakingModal();
+          setLandingLoading(true, 'Finding open match...');
+          const username = getValidatedUsername();
+          if (username) {
+            socket.emit('join-random-match', {
+              username,
+              sessionToken,
+              mode: preferredMode
+            });
+          }
+        };
+      }
+    }
+
+    if (createLabel) createLabel.textContent = 'Create ' + preferredModeName + ' Room';
+    if (btnCreate) {
+      btnCreate.onclick = () => {
+        clearInterval(matchmakingCountdownInterval);
+        closeMatchmakingModal();
+        setLandingLoading(true, 'Creating your ' + preferredModeName + ' room...');
+        const username = getValidatedUsername();
+        if (username) {
+          socket.emit('join-random-match', {
+            username,
+            sessionToken,
+            mode: preferredMode,
+            forceCreate: true
+          });
+        }
+      };
+    }
+
+    if (btnClose) {
+      btnClose.onclick = () => {
+        clearInterval(matchmakingCountdownInterval);
+        closeMatchmakingModal();
+        setLandingLoading(false);
+      };
+    }
+
+    // 10-Second Countdown with perimeter border countdown animation
+    let secondsLeft = 10;
+    if (timerValEl) timerValEl.textContent = '10s';
+
+    clearInterval(matchmakingCountdownInterval);
+    matchmakingCountdownInterval = setInterval(() => {
+      secondsLeft--;
+      if (timerValEl) timerValEl.textContent = secondsLeft + 's';
+
+      // Animate perimeter border indicator: offset progresses from 0 to 100
+      if (borderProgress) {
+        const offset = ((10 - secondsLeft) / 10) * 100;
+        borderProgress.style.strokeDashoffset = String(offset);
+        if (secondsLeft <= 3) {
+          borderProgress.classList.add('urgent');
+        }
+      }
+
+      if (typeof window.playSound === 'function' && secondsLeft > 0) {
+        window.playSound('tick');
+      }
+
+      if (secondsLeft <= 0) {
+        clearInterval(matchmakingCountdownInterval);
+        closeMatchmakingModal();
+        showToast('10s elapsed — automatically creating your ' + preferredModeName + ' room! 👑', 'info', '✨', 3500);
+        setLandingLoading(true, 'Creating your ' + preferredModeName + ' room...');
+        const username = getValidatedUsername();
+        if (username) {
+          socket.emit('join-random-match', {
+            username,
+            sessionToken,
+            mode: preferredMode,
+            forceCreate: true
+          });
+        }
+      }
+    }, 1000);
+
+    function syncFloatingBorder() {
+      if (!banner) return;
+      const w = Math.max(0, banner.clientWidth);
+      const h = Math.max(0, banner.clientHeight);
+      const track = banner.querySelector('.floating-border-track');
+      const fill = document.getElementById('floatingBorderProgress');
+      if (track) {
+        track.setAttribute('width', String(Math.max(0, w - 2)));
+        track.setAttribute('height', String(Math.max(0, h - 2)));
+      }
+      if (fill) {
+        fill.setAttribute('width', String(Math.max(0, w - 2)));
+        fill.setAttribute('height', String(Math.max(0, h - 2)));
+      }
+    }
+
+    banner.style.display = 'flex';
+    syncFloatingBorder();
+    requestAnimationFrame(() => syncFloatingBorder());
+  }
+
+  function closeMatchmakingModal() {
+    clearInterval(matchmakingCountdownInterval);
+    const banner = document.getElementById('floatingMatchmakerBanner');
+    if (banner) {
+      banner.style.display = 'none';
+    }
+    const borderProgress = document.getElementById('floatingBorderProgress');
+    if (borderProgress) {
+      borderProgress.classList.remove('urgent');
+      borderProgress.style.strokeDashoffset = '0';
+    }
+  }
+
+  window.openMatchmakingModal = openMatchmakingModal;
+  window.closeMatchmakingModal = closeMatchmakingModal;
+  window.renderLandingRoomOptions = () => {};
+
+  /**
    * Comic Black & White Modal Confirmation Dialog
    * Replaces ugly browser native confirm() with an authentic themed container.
    */
@@ -495,8 +828,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnJoinRandom.addEventListener('click', () => {
       const username = getValidatedUsername();
       if (!username) return;
-      setLandingLoading(true, 'Finding match...');
-      socket.emit('join-random-match', { username, sessionToken });
+      const preferredMode = window.selectedGameMode || 'classic';
+      setLandingLoading(true, `Finding ${preferredMode === 'impostor' ? 'Impostor' : 'Classic'} match...`);
+      socket.emit('join-random-match', { username, sessionToken, mode: preferredMode });
     });
   }
 
@@ -505,8 +839,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCreateCustom.addEventListener('click', () => {
       const username = getValidatedUsername();
       if (!username) return;
-      setLandingLoading(true, 'Creating custom room...');
-      socket.emit('create-custom-game', { username, sessionToken });
+      const preferredMode = window.selectedGameMode || 'classic';
+      setLandingLoading(true, `Creating custom ${preferredMode === 'impostor' ? 'Impostor' : 'Classic'} room...`);
+      socket.emit('create-custom-game', { username, sessionToken, mode: preferredMode });
     });
   }
 
@@ -957,7 +1292,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const lockedModeBtns = document.querySelectorAll('.mode-btn-locked');
   lockedModeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      showToast('This game mode is coming in an upcoming update! 🔒✨', 'info', '⏳', 2800);
+      showComicBurst(btn, {
+        mode: 'locked',
+        subtext: 'COMING SOON 🔒'
+      });
       playPencilSound();
     });
   });
@@ -965,7 +1303,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const modeBtnClassic = document.getElementById('modeBtnClassic');
   if (modeBtnClassic) {
     modeBtnClassic.addEventListener('click', () => {
-      showToast('Classic Mode selected: 1 Blind Drawer + Clue Describers 🎨', 'info', '✅', 2200);
+      if (window.impostorManager && typeof window.impostorManager.setLocalMode === 'function') {
+        window.impostorManager.setLocalMode('classic');
+      } else {
+        window.selectedGameMode = 'classic';
+      }
+      renderLandingRoomOptions();
+      showComicBurst(modeBtnClassic, {
+        mode: 'classic',
+        subtext: 'CLASSIC ★'
+      });
     });
   }
 
@@ -2496,6 +2843,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleRoomJoined(data) {
     setLandingLoading(false);
+    closeMatchmakingModal();
+    dismissComicBalloon();
     currentRoomId = data.roomId || 'MAIN';
 
     if (currentRoomCode) {
@@ -2536,8 +2885,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentUser = data.currentUser;
     connectedUsers = data.users || [];
-    if (typeof data.isHost === 'boolean') isRoomHost = data.isHost;
+    if (typeof data.isHost === 'boolean') {
+      isRoomHost = data.isHost;
+      window.isRoomHost = data.isHost;
+    }
     if (data.hostId) roomHostId = data.hostId;
+    if (data.selectedMode) {
+      window.selectedGameMode = data.selectedMode;
+      if (window.impostorManager && typeof window.impostorManager.updateModePill === 'function') {
+        window.impostorManager.updateModePill(data.selectedMode);
+      }
+    }
 
     if (currentUserNameEl) currentUserNameEl.textContent = currentUser.username;
     if (userAvatarDotEl) {
@@ -2564,8 +2922,19 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('room-joined', handleRoomJoined);
   socket.on('init-game', handleRoomJoined);
 
+  socket.on('open-rooms-summary', (rooms) => {
+    liveOpenRooms = Array.isArray(rooms) ? rooms : [];
+    renderLandingRoomOptions();
+  });
+
+  socket.on('matchmaking-alternatives-available', (data) => {
+    setLandingLoading(false);
+    openMatchmakingModal(data);
+  });
+
   socket.on('join-error', (data) => {
     setLandingLoading(false);
+    closeMatchmakingModal();
     const msg = data?.message || 'Error joining room.';
     showLandingError(msg);
     showToast(msg, 'danger', '⚠️', 4000);

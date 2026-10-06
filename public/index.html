@@ -13,7 +13,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Fredoka:wght@500;600;700;800&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=3.0">
   <link rel="stylesheet" href="css/academy.css?v=1.0">
   <link rel="stylesheet" href="css/inkslaught.css?v=1.0">
 </head>
@@ -330,20 +330,11 @@
                     <h3 class="post-it-title">Patch Notes &amp; Updates</h3>
                     <div class="post-it-content">
                       <ul class="post-it-list">
-                        <li><strong>Single Player Modes:</strong> Play solo anytime! Enjoy relaxing symmetry in
-                          <strong>Zen Mode</strong> or test your skills in the brand new <strong>Drawing
-                            Academy</strong>!
-                        </li>
-                        <li><strong>Drawing Academy(Beta):</strong> Master drawing through 4 escalating tiers with
-                          instant pixel accuracy scoring and helpful guides!</li>
-                        <li><strong>Impostor Mode:</strong> One secret faker doesn't know the word! Take turns
-                          sketching, vote on suspects, or guess the word to steal the win!</li>
-                        <li><strong>Undo Button &amp; Export:</strong> Fix any slip-ups instantly with the new canvas
-                          undo button, or save your artwork straight to your device!</li>
-                        <li><strong>Mobile &amp; Word Bank:</strong> Full smartphone layout with quick tabs, plus 100+
-                          fresh categorized words &amp; taboo traps!</li>
+                        <li><strong>Inkslaught Arcade Mode:</strong> Survive endless waves of ink monsters! Draw matching gestures to slash enemies and defeat heavy Tank Juggernauts.</li>
+                        <li><strong>Arcane Grimoire:</strong> Customize your loadout with 3 Active spells and 1 Passive sigil (like Thorned Calligraphy, Chrono Bolt, or Ink Siphon)!</li>
+                        <li><strong>Matchmaking &amp; Polish:</strong> Faster room joining with smart timers, comic burst effects, and refined enemy gesture balance!</li>
                       </ul>
-                      <div class="post-it-signature">— Dev Scribbles &bull; v2.7 ✏️</div>
+                      <div class="post-it-signature">— Dev Scribbles &bull; v3.0 ⚔️</div>
                     </div>
                   </div>
                 </div>
@@ -839,6 +830,10 @@
         <button type="button" class="btn-inkslaught-action" id="btnInkslaughtSound" title="Toggle Sound">
           <span id="inkslaughtSoundIcon">🔊</span>
         </button>
+        <button type="button" class="btn-inkslaught-action" id="btnInkslaughtPause" title="Pause / Resume Game (P or Esc)">
+          <span id="inkslaughtPauseIcon">⏸️</span>
+          <span id="inkslaughtPauseText">Pause</span>
+        </button>
         <button type="button" class="btn-inkslaught-action" id="btnInkslaughtRestartTop" title="Restart Game">
           <span>🔄</span>
           <span>Restart</span>
@@ -860,15 +855,16 @@
               <span class="grimoire-book-icon">📖</span>
               <span class="grimoire-title-text">GRIMOIRE</span>
             </div>
-            <button type="button" class="btn-grimoire-swap" id="btnGrimoireSwapLoadout" title="Change Equipped Spells">
-              <span>⚙️</span>
-              <span>Spells</span>
-            </button>
           </div>
 
           <!-- 3 Equipped Spell Cards Container -->
           <div class="grimoire-spells-list" id="grimoireSpellsList">
             <!-- Dynamically populated with the 3 equipped spells -->
+          </div>
+
+          <!-- Equipped Passive Sigil Widget -->
+          <div class="grimoire-passive-box" id="grimoirePassiveBox">
+            <!-- Dynamically populated with equipped passive -->
           </div>
 
           <!-- Active Runic Sequence Display -->
@@ -902,22 +898,32 @@
         <div class="inkslaught-canvas-wrap" id="inkslaughtCanvasWrap">
           <canvas class="inkslaught-canvas" id="inkslaughtCanvas" width="1200" height="800"></canvas>
 
-          <!-- Pre-Game Grimoire Loadout Selector Modal -->
+          <!-- Pre-Game Grimoire Loadout Selector Modal (3 Actives + 1 Passive) -->
           <div class="inkslaught-modal-overlay hidden" id="inkslaughtLoadoutModal">
             <div class="inkslaught-modal-card loadout-card">
               <div class="inkslaught-modal-icon">📖</div>
               <h2 class="inkslaught-modal-title">CHOOSE YOUR GRIMOIRE</h2>
-              <p class="inkslaught-modal-subtitle">Pick <strong>3 arcane ink spells</strong> to equip for your survival run.</p>
+              <p class="inkslaught-modal-subtitle">Equip <strong>3 Active Spells</strong> and <strong>1 Passive Sigil</strong> for your survival run.</p>
 
+              <!-- Section 1: Active Spells -->
+              <div class="loadout-section-header">
+                <span class="loadout-section-title">✨ ACTIVE SPELLS (Choose 3)</span>
+                <span class="loadout-section-count" id="loadoutActiveCountText">Selected: 3 of 3</span>
+              </div>
               <div class="loadout-spells-grid" id="loadoutSpellsGrid">
                 <!-- 5 Spells populated dynamically -->
               </div>
 
-              <div class="loadout-status-bar">
-                <span id="loadoutCountText">Selected: 3 of 3 Spells</span>
+              <!-- Section 2: Passive Sigil -->
+              <div class="loadout-section-header" style="margin-top: 14px;">
+                <span class="loadout-section-title">🔮 PASSIVE SIGIL (Choose 1)</span>
+                <span class="loadout-section-count" id="loadoutPassiveCountText">Selected: 1 of 1</span>
+              </div>
+              <div class="loadout-passives-grid" id="loadoutPassivesGrid">
+                <!-- 6 Passives populated dynamically -->
               </div>
 
-              <div class="inkslaught-modal-actions">
+              <div class="inkslaught-modal-actions" style="margin-top: 16px;">
                 <button type="button" class="btn-modal-restart" id="btnConfirmLoadout">
                   <span>⚔️</span>
                   <span>Enter Inkslaught</span>
@@ -977,6 +983,15 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- Pause Screen Overlay: single green play icon button, no other windows or buttons -->
+          <div class="inkslaught-modal-overlay pause-screen-overlay hidden" id="inkslaughtPauseModal">
+            <button type="button" class="btn-pause-play" id="btnInkslaughtResume" title="Resume Game (P or Esc)" aria-label="Resume Game">
+              <svg viewBox="0 0 24 24" class="pause-play-icon" aria-hidden="true">
+                <polygon points="7,4 20,12 7,20" fill="currentColor"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1599,13 +1614,54 @@
     </div>
   </div>
 
+  <!-- Floating Top-Center Matchmaking Window with Animated Perimeter Border Timer -->
+  <div class="floating-matchmaker-banner" id="floatingMatchmakerBanner" style="display: none;" role="dialog" aria-live="polite">
+    <!-- SVG Perimeter Countdown Border -->
+    <svg class="floating-border-svg" aria-hidden="true">
+      <rect class="floating-border-track" x="2" y="2" rx="14" ry="14" fill="none" />
+      <rect class="floating-border-fill" id="floatingBorderProgress" x="2" y="2" rx="14" ry="14" fill="none" pathLength="100" />
+    </svg>
+
+    <div class="floating-banner-inner">
+      <div class="floating-banner-top">
+        <div class="floating-status-group">
+          <div class="floating-icon-wrap">
+            <span class="floating-status-icon" id="floatingStatusIcon">🧭</span>
+          </div>
+          <div class="floating-status-text">
+            <span class="floating-main-title" id="floatingMainTitle">Trying to find an open room...</span>
+            <span class="floating-sub-note" id="floatingSubNote">Searching for players</span>
+          </div>
+        </div>
+        <div class="floating-top-controls">
+          <div class="floating-timer-badge" id="floatingTimerBadge">
+            <span class="timer-dot"></span>
+            <span class="timer-text" id="floatingTimerVal">10s</span>
+          </div>
+          <button type="button" class="btn-floating-close" id="btnFloatingClose" title="Cancel Matchmaking">✕</button>
+        </div>
+      </div>
+
+      <div class="floating-banner-actions" id="floatingBannerActions">
+        <button type="button" class="btn-floating-opt btn-opt-join" id="btnFloatingJoinOpt">
+          <span class="opt-ic" id="floatingJoinOptIcon">⚡</span>
+          <span id="floatingJoinOptLabel">Join Random Room</span>
+        </button>
+        <button type="button" class="btn-floating-opt btn-opt-create" id="btnFloatingCreateOpt">
+          <span class="opt-ic">➕</span>
+          <span id="floatingCreateOptLabel">Create Own Room</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="impostorClient.js?v=2.6"></script>
   <script src="js/zenMode.js?v=2.6"></script>
   <script src="js/academyLevels.js?v=1.0"></script>
   <script src="js/academyMode.js?v=1.0"></script>
-  <script src="js/inkslaughtMode.js?v=1.0"></script>
-  <script src="client.js?v=2.6"></script>
+  <script src="js/inkslaughtMode.js?v=1.1"></script>
+  <script src="client.js?v=3.0"></script>
 </body>
 
 </html>

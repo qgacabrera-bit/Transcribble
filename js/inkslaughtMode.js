@@ -463,6 +463,52 @@
     }
   };
 
+  // Passive Sigil Inscriptions (Equip 1 along with 3 Actives)
+  const PASSIVE_DEFS = {
+    ink_siphon: {
+      id: 'ink_siphon',
+      name: 'Ink Siphon',
+      icon: '🖋️',
+      desc: 'Every 5 enemies slain shaves 1.5s off all active cooldowns & grants bonus Ink EXP.',
+      badgeBg: '#DDD6FE'
+    },
+    splatter_shockwave: {
+      id: 'splatter_shockwave',
+      name: 'Splatter Shockwave',
+      icon: '💥',
+      desc: 'Achieving a 5-kill streak or slaying a Tank emits a radial blast stripping 1 symbol within 160px.',
+      badgeBg: '#FECDD3'
+    },
+    chrono_blot: {
+      id: 'chrono_blot',
+      name: 'Chrono Bolt',
+      icon: '⏳',
+      desc: 'When an enemy nears the wall (<180px), time slows down by 60% for 5 seconds. (35s cooldown)',
+      badgeBg: '#BAE6FD'
+    },
+    thorned_calligraphy: {
+      id: 'thorned_calligraphy',
+      name: 'Thorned Calligraphy',
+      icon: '🗡️',
+      desc: 'When an enemy touches the wall, barrier thorns activate for 10s: deals 2 symbol hits & bursts 1HP minions. (45s cooldown)',
+      badgeBg: '#BBF7D0'
+    },
+    critical_quill: {
+      id: 'critical_quill',
+      name: 'Critical Quill',
+      icon: '⚡',
+      desc: 'Gesture slashes have a 30% Critical chance to pierce 2 symbols simultaneously on Tanks.',
+      badgeBg: '#FEF08A'
+    },
+    scholars_bounty: {
+      id: 'scholars_bounty',
+      name: "Scholar's Bounty",
+      icon: '📜',
+      desc: '+40% Ink EXP gain + 3,000 bonus score for every phase survived.',
+      badgeBg: '#FED7AA'
+    }
+  };
+
   // =========================================================================
   // 3. Enemy Entity Class
   // =========================================================================
@@ -844,6 +890,16 @@
       this.isSkillDrawing = false;
       this.skillStrokePoints = [];
 
+      this.equippedPassive = 'thorned_calligraphy';
+      this.selectedLoadoutPassive = 'thorned_calligraphy';
+      this.thornedTimer = 0.0;
+      this.thornedCooldown = 0.0;
+      this.chronoTimer = 0.0;
+      this.chronoCooldown = 0.0;
+      this.passiveSiphonKills = 0;
+      this.killStreak = 0;
+      this.grimoirePassiveBox = null;
+
       this.animFrameId = null;
       this.lastTimestamp = 0;
 
@@ -868,10 +924,12 @@
       this.highScoreDisplay = document.getElementById('inkslaughtHighScoreDisplay');
       this.expDisplay = document.getElementById('inkslaughtExpDisplay');
       this.modalOverlay = document.getElementById('inkslaughtGameOverModal');
+      this.pauseModal = document.getElementById('inkslaughtPauseModal');
       this.soundIcon = document.getElementById('inkslaughtSoundIcon');
 
       this.grimoireSidebar = document.getElementById('inkslaughtGrimoireSidebar');
       this.grimoireSpellsList = document.getElementById('grimoireSpellsList');
+      this.grimoirePassiveBox = document.getElementById('grimoirePassiveBox');
       this.grimoireSequenceSlots = document.getElementById('grimoireSequenceSlots');
       this.skillCanvas = document.getElementById('inkslaughtSkillCanvas');
       this.loadoutModal = document.getElementById('inkslaughtLoadoutModal');
@@ -931,11 +989,23 @@
       const logo = document.getElementById('inkslaughtLogo');
       if (logo) logo.addEventListener('click', () => this.close());
 
+      const btnPause = document.getElementById('btnInkslaughtPause');
+      if (btnPause) btnPause.addEventListener('click', () => this.togglePause());
+
+      const btnResume = document.getElementById('btnInkslaughtResume');
+      if (btnResume) btnResume.addEventListener('click', () => this.resume());
+
+      if (this.pauseModal) {
+        this.pauseModal.addEventListener('click', (e) => {
+          if (e.target === this.pauseModal) this.resume();
+        });
+      }
+
       const btnRestartTop = document.getElementById('btnInkslaughtRestartTop');
-      if (btnRestartTop) btnRestartTop.addEventListener('click', () => this.restart());
+      if (btnRestartTop) btnRestartTop.addEventListener('click', () => this.requestRestart());
 
       const btnRestartModal = document.getElementById('btnInkslaughtRestart');
-      if (btnRestartModal) btnRestartModal.addEventListener('click', () => this.restart());
+      if (btnRestartModal) btnRestartModal.addEventListener('click', () => this.requestRestart());
 
       const btnExitModal = document.getElementById('btnInkslaughtModalExit');
       if (btnExitModal) btnExitModal.addEventListener('click', () => this.close());
@@ -947,6 +1017,17 @@
           if (this.soundIcon) this.soundIcon.textContent = this.isMuted ? '🔇' : '🔊';
         });
       }
+
+      window.addEventListener('keydown', (e) => {
+        if (!this.view || this.view.classList.contains('hidden')) return;
+        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+          if (this.loadoutModal && !this.loadoutModal.classList.contains('hidden')) return;
+          if (this.levelUpModal && !this.levelUpModal.classList.contains('hidden')) return;
+          if (this.modalOverlay && !this.modalOverlay.classList.contains('hidden')) return;
+          e.preventDefault();
+          this.togglePause();
+        }
+      });
     }
 
     // =========================================================================
@@ -1014,13 +1095,6 @@
           this.activeRuneSequence = [];
           this.updateSequenceUI();
           this.playCombatSound('miss');
-        });
-      }
-
-      const btnSwap = document.getElementById('btnGrimoireSwapLoadout');
-      if (btnSwap) {
-        btnSwap.addEventListener('click', () => {
-          this.openLoadoutModal(false);
         });
       }
     }
@@ -1385,6 +1459,90 @@
           }
         }
       });
+      this.updatePassiveUI();
+    }
+
+    renderGrimoirePassive() {
+      if (!this.grimoirePassiveBox) return;
+      const def = PASSIVE_DEFS[this.equippedPassive] || PASSIVE_DEFS.thorned_calligraphy;
+      if (!def) return;
+
+      let badgeText = 'READY';
+      let badgeClass = '';
+
+      if (this.equippedPassive === 'thorned_calligraphy') {
+        if (this.thornedTimer > 0) {
+          badgeText = `ACTIVE ${Math.ceil(this.thornedTimer)}s`;
+          badgeClass = 'badge-active';
+        } else if (this.thornedCooldown > 0) {
+          badgeText = `CD ${Math.ceil(this.thornedCooldown)}s`;
+          badgeClass = 'badge-cd';
+        } else {
+          badgeText = 'READY';
+        }
+      } else if (this.equippedPassive === 'chrono_blot') {
+        if (this.chronoTimer > 0) {
+          badgeText = `SLOW ${Math.ceil(this.chronoTimer)}s`;
+          badgeClass = 'badge-active';
+        } else if (this.chronoCooldown > 0) {
+          badgeText = `CD ${Math.ceil(this.chronoCooldown)}s`;
+          badgeClass = 'badge-cd';
+        } else {
+          badgeText = 'READY';
+        }
+      } else if (this.equippedPassive === 'ink_siphon') {
+        badgeText = `${this.passiveSiphonKills || 0}/5 KILLS`;
+      } else if (this.equippedPassive === 'splatter_shockwave') {
+        badgeText = `${(this.killStreak || 0) % 5}/5 STREAK`;
+      } else if (this.equippedPassive === 'critical_quill') {
+        badgeText = '30% CRIT';
+      } else if (this.equippedPassive === 'scholars_bounty') {
+        badgeText = '+40% EXP';
+      }
+
+      this.grimoirePassiveBox.innerHTML = `
+        <div class="passive-box-header">
+          <div class="passive-box-title-group">
+            <span class="passive-box-icon">${def.icon}</span>
+            <span class="passive-box-name">${def.name}</span>
+          </div>
+          <span class="passive-box-badge ${badgeClass}" id="passiveBadgeStatus">${badgeText}</span>
+        </div>
+        <div class="passive-box-desc">${def.desc}</div>
+      `;
+    }
+
+    updatePassiveUI() {
+      const badge = document.getElementById('passiveBadgeStatus');
+      if (!badge) return;
+
+      if (this.equippedPassive === 'thorned_calligraphy') {
+        if (this.thornedTimer > 0) {
+          badge.textContent = `ACTIVE ${Math.ceil(this.thornedTimer)}s`;
+          badge.className = 'passive-box-badge badge-active';
+        } else if (this.thornedCooldown > 0) {
+          badge.textContent = `CD ${Math.ceil(this.thornedCooldown)}s`;
+          badge.className = 'passive-box-badge badge-cd';
+        } else {
+          badge.textContent = 'READY';
+          badge.className = 'passive-box-badge';
+        }
+      } else if (this.equippedPassive === 'chrono_blot') {
+        if (this.chronoTimer > 0) {
+          badge.textContent = `SLOW ${Math.ceil(this.chronoTimer)}s`;
+          badge.className = 'passive-box-badge badge-active';
+        } else if (this.chronoCooldown > 0) {
+          badge.textContent = `CD ${Math.ceil(this.chronoCooldown)}s`;
+          badge.className = 'passive-box-badge badge-cd';
+        } else {
+          badge.textContent = 'READY';
+          badge.className = 'passive-box-badge';
+        }
+      } else if (this.equippedPassive === 'ink_siphon') {
+        badge.textContent = `${this.passiveSiphonKills || 0}/5 KILLS`;
+      } else if (this.equippedPassive === 'splatter_shockwave') {
+        badge.textContent = `${(this.killStreak || 0) % 5}/5 STREAK`;
+      }
     }
 
     openLoadoutModal(isStart = false) {
@@ -1394,22 +1552,29 @@
 
       if (!this.loadoutModal) return;
       const grid = document.getElementById('loadoutSpellsGrid');
-      const countText = document.getElementById('loadoutCountText');
+      const passivesGrid = document.getElementById('loadoutPassivesGrid');
+      const activeCountText = document.getElementById('loadoutActiveCountText');
+      const passiveCountText = document.getElementById('loadoutPassiveCountText');
       const btnConfirm = document.getElementById('btnConfirmLoadout');
 
       if (!grid) return;
       grid.innerHTML = '';
+      if (passivesGrid) passivesGrid.innerHTML = '';
 
       const updateCountUI = () => {
-        const count = this.selectedLoadoutSpells.size;
-        if (countText) countText.textContent = `Selected: ${count} of 3 Spells`;
+        const activeCount = this.selectedLoadoutSpells.size;
+        const hasPassive = !!this.selectedLoadoutPassive;
+        if (activeCountText) activeCountText.textContent = `Selected: ${activeCount} of 3`;
+        if (passiveCountText) passiveCountText.textContent = hasPassive ? `Selected: 1 of 1` : `Selected: 0 of 1`;
         if (btnConfirm) {
-          btnConfirm.disabled = (count !== 3);
-          btnConfirm.style.opacity = (count === 3) ? '1' : '0.5';
-          btnConfirm.style.cursor = (count === 3) ? 'pointer' : 'not-allowed';
+          const isValid = (activeCount === 3 && hasPassive);
+          btnConfirm.disabled = !isValid;
+          btnConfirm.style.opacity = isValid ? '1' : '0.5';
+          btnConfirm.style.cursor = isValid ? 'pointer' : 'not-allowed';
         }
       };
 
+      // 1. Populate Active Spells
       Object.values(SPELL_DEFS).forEach(def => {
         const isSelected = this.selectedLoadoutSpells.has(def.id);
         const card = document.createElement('div');
@@ -1439,11 +1604,9 @@
 
         card.addEventListener('click', () => {
           if (this.selectedLoadoutSpells.has(def.id)) {
-            if (this.selectedLoadoutSpells.size > 1) {
-              this.selectedLoadoutSpells.delete(def.id);
-              card.classList.remove('selected');
-              card.querySelector('.loadout-check-indicator').textContent = '⚪';
-            }
+            this.selectedLoadoutSpells.delete(def.id);
+            card.classList.remove('selected');
+            card.querySelector('.loadout-check-indicator').textContent = '⚪';
           } else {
             if (this.selectedLoadoutSpells.size < 3) {
               this.selectedLoadoutSpells.add(def.id);
@@ -1457,14 +1620,52 @@
         grid.appendChild(card);
       });
 
+      // 2. Populate Passive Sigils (Choose 1)
+      if (passivesGrid) {
+        Object.values(PASSIVE_DEFS).forEach(pdef => {
+          const isSelected = (this.selectedLoadoutPassive === pdef.id);
+          const pcard = document.createElement('div');
+          pcard.className = `loadout-passive-item ${isSelected ? 'selected' : ''}`;
+          pcard.dataset.passiveId = pdef.id;
+
+          pcard.innerHTML = `
+            <div class="loadout-passive-top">
+              <div class="loadout-passive-title-wrap">
+                <span class="loadout-passive-icon">${pdef.icon}</span>
+                <span class="loadout-passive-name">${pdef.name}</span>
+              </div>
+              <span class="loadout-check-indicator">${isSelected ? '✅' : '⚪'}</span>
+            </div>
+            <p class="loadout-passive-desc">${pdef.desc}</p>
+          `;
+
+          pcard.addEventListener('click', () => {
+            this.selectedLoadoutPassive = pdef.id;
+            passivesGrid.querySelectorAll('.loadout-passive-item').forEach(c => {
+              c.classList.remove('selected');
+              const ind = c.querySelector('.loadout-check-indicator');
+              if (ind) ind.textContent = '⚪';
+            });
+            pcard.classList.add('selected');
+            const myInd = pcard.querySelector('.loadout-check-indicator');
+            if (myInd) myInd.textContent = '✅';
+            updateCountUI();
+          });
+
+          passivesGrid.appendChild(pcard);
+        });
+      }
+
       updateCountUI();
 
       if (btnConfirm) {
         btnConfirm.onclick = () => {
-          if (this.selectedLoadoutSpells.size !== 3) return;
+          if (this.selectedLoadoutSpells.size !== 3 || !this.selectedLoadoutPassive) return;
           this.equippedSpells = Array.from(this.selectedLoadoutSpells);
+          this.equippedPassive = this.selectedLoadoutPassive;
           this.loadoutModal.classList.add('hidden');
           this.renderGrimoireSpells();
+          this.renderGrimoirePassive();
 
           if (isStart) {
             this.restart();
@@ -1478,6 +1679,9 @@
     }
 
     gainInkExp(expAmount) {
+      if (this.equippedPassive === 'scholars_bounty') {
+        expAmount = Math.round(expAmount * 1.4);
+      }
       this.inkExp += expAmount;
       if (this.expDisplay) {
         const pct = Math.min(100, Math.floor((this.inkExp / this.expToNext) * 100));
@@ -1616,6 +1820,13 @@
         target.symbolArray.shift();
         target.hitFlashTimer = 8;
 
+        // Critical Quill Passive: 30% chance to pierce 2 symbols simultaneously on Tanks
+        if (this.equippedPassive === 'critical_quill' && target.isTank && target.symbolArray.length > 0 && Math.random() < 0.30) {
+          target.symbolArray.shift();
+          this.spawnHitSparks(target.x + target.width / 2, target.y + target.height / 2, '#F59E0B');
+          this.addFloatingText('⚡ CRIT! (x2 PIERCE)', target.x + target.width / 2, target.y - 25, '#F59E0B', true);
+        }
+
         this.spawnSlashBeam(centroidX, centroidY, target.x + target.width / 2, target.y + target.height / 2, meta.badgeBg || '#FFE600');
         this.playCombatSound('slash');
 
@@ -1636,6 +1847,39 @@
     onEnemyDefeated(target, color = '#FFE600', extraScoreMult = 1.0) {
       target.isDead = true;
       this.enemiesSlain++;
+      this.killStreak = (this.killStreak || 0) + 1;
+
+      // Ink Siphon Passive: Every 5 enemies slain shaves 1.5s off active cooldowns & grants bonus Ink EXP
+      if (this.equippedPassive === 'ink_siphon') {
+        this.passiveSiphonKills = (this.passiveSiphonKills || 0) + 1;
+        if (this.passiveSiphonKills >= 5) {
+          this.passiveSiphonKills = 0;
+          this.equippedSpells.forEach(id => {
+            if (this.spellCooldowns[id] > 0) {
+              this.spellCooldowns[id] = Math.max(0, this.spellCooldowns[id] - 1.5);
+            }
+          });
+          this.gainInkExp(15);
+          this.addFloatingText('🖋️ SIPHON: -1.5s CD!', this.CANVAS_WIDTH / 2, 260, '#DDD6FE', true);
+        }
+      }
+
+      // Splatter Shockwave Passive: 5-kill streak or Tank kill triggers radial ink blast clearing 1 symbol within 160px
+      if (this.equippedPassive === 'splatter_shockwave' && ((this.killStreak % 5 === 0) || target.isTank)) {
+        const tx = target.x + target.width / 2;
+        const ty = target.y + target.height / 2;
+        this.spawnDeathExplosion(tx, ty, '#FECDD3', false);
+        this.addFloatingText('💥 SPLATTER SHOCKWAVE!', tx, ty - 28, '#FECDD3', true);
+        this.enemies.forEach(other => {
+          if (other !== target && !other.isDead) {
+            const dist = Math.hypot(other.x - tx, other.y - ty);
+            if (dist < 160) {
+              if (other.symbolArray.length > 1) other.symbolArray.shift();
+              else this.onEnemyDefeated(other, '#FECDD3');
+            }
+          }
+        });
+      }
 
       const isFrozen = (this.freezeTimer > 0);
       const freezeMultiplier = isFrozen ? 2.0 : 1.0;
@@ -1706,6 +1950,10 @@
       }
 
       if (this.currentPhase !== prevPhase) {
+        if (this.equippedPassive === 'scholars_bounty') {
+          this.score += 3000;
+          this.addFloatingText('📜 +3,000 SCHOLAR BOUNTY!', this.CANVAS_WIDTH / 2, 240, '#FED7AA', true);
+        }
         const phaseNames = [
           '',
           'Phase 1: Inklings',
@@ -1744,7 +1992,8 @@
         maxInterval = 1650;
         tankChance = 0.0;
       } else {
-        pool = ['Vertical Line', 'Horizontal Line', 'Caret', 'V-Shape', 'Circle', 'Lightning Bolt', 'Star', 'Ampersand'];
+        // Normal 1HP enemies draw from fast shapes (strictly excluding Ampersand so they remain balanced)
+        pool = ['Vertical Line', 'Horizontal Line', 'Caret', 'V-Shape', 'Circle', 'Lightning Bolt', 'Star'];
         baseSpeed = 2.0 + Math.random() * 0.6;
         minInterval = 950;
         maxInterval = 1350;
@@ -1755,12 +2004,15 @@
       let enemySymbols = [];
 
       if (isTank) {
+        // Multi-HP Tank Juggernauts can feature Ampersand as a challenging combo rune
+        const tankPool = [...pool, 'Ampersand'];
         const symbolCount = Math.floor(Math.random() * 3) + 2;
         for (let s = 0; s < symbolCount; s++) {
-          const randSym = pool[Math.floor(Math.random() * pool.length)];
+          const randSym = tankPool[Math.floor(Math.random() * tankPool.length)];
           enemySymbols.push(randSym);
         }
       } else {
+        // Normal 1HP enemies strictly never roll Ampersand
         const randSym = pool[Math.floor(Math.random() * pool.length)];
         enemySymbols = [randSym];
       }
@@ -1809,6 +2061,37 @@
         }
       }
       this.updateGrimoireCooldownsUI();
+
+      // Update Passive Cooldowns & Timers
+      if (this.chronoTimer > 0) {
+        this.chronoTimer -= dtSec;
+      }
+      if (this.chronoCooldown > 0) {
+        this.chronoCooldown -= dtSec;
+      }
+      if (this.thornedTimer > 0) {
+        this.thornedTimer -= dtSec;
+      }
+      if (this.thornedCooldown > 0) {
+        this.thornedCooldown -= dtSec;
+      }
+
+      // Chrono Bolt Trigger Check (<180px from wall, 5s duration, 35s cooldown)
+      if (this.equippedPassive === 'chrono_blot' && this.chronoCooldown <= 0 && this.chronoTimer <= 0) {
+        let needsSlow = false;
+        for (const enemy of this.enemies) {
+          if (!enemy.isDead && (enemy.x - this.WALL_X < 180)) {
+            needsSlow = true;
+            break;
+          }
+        }
+        if (needsSlow) {
+          this.chronoTimer = 5.0;
+          this.chronoCooldown = 35.0;
+          this.addFloatingText('⏳ CHRONO BOLT (5s Slow)!', this.CANVAS_WIDTH / 2, 210, '#38BDF8', true);
+          this.playCombatSound('spell_cast');
+        }
+      }
 
       // Update Spells: Freeze / Chill
       const isFrozen = (this.freezeTimer > 0);
@@ -1903,6 +2186,9 @@
         } else if (isChilled) {
           speedMult = 0.40;
         }
+        if (this.chronoTimer > 0) {
+          speedMult *= 0.40; // Chrono Bolt: 60% slow down for 5 seconds
+        }
         enemy.update(dtFactor * speedMult);
 
         // Check City Wall Breach: x <= 50
@@ -1932,6 +2218,37 @@
               this.spawnDeathExplosion(this.WALL_X + 16, this.CANVAS_HEIGHT / 2, '#EF4444', false);
               this.addFloatingText('💥 BARRIER BROKEN!', this.WALL_X + 70, this.CANVAS_HEIGHT / 2, '#EF4444', true);
             }
+            continue;
+          } else if (this.equippedPassive === 'thorned_calligraphy' && (this.thornedTimer > 0 || this.thornedCooldown <= 0)) {
+            // Thorned Calligraphy: activates when enemy touches wall, active for 10s, 45s cooldown
+            if (this.thornedTimer <= 0) {
+              this.thornedTimer = 10.0;
+              this.thornedCooldown = 45.0;
+              this.addFloatingText('🗡️ THORNED CALLIGRAPHY (10s)!', this.WALL_X + 130, this.CANVAS_HEIGHT / 2, '#22C55E', true);
+              this.playCombatSound('spell_cast');
+            }
+
+            // Repel enemy
+            enemy.x = this.WALL_X + 170;
+            enemy.hitFlashTimer = 10;
+
+            // Deal 2 symbol hits
+            if (enemy.symbolArray.length > 2) {
+              enemy.symbolArray.splice(0, 2);
+              this.spawnHitSparks(enemy.x, enemy.y, '#22C55E');
+              this.addFloatingText('🗡️ -2 SYMBOLS!', enemy.x, enemy.y - 15, '#22C55E', true);
+            } else {
+              this.onEnemyDefeated(enemy, '#22C55E');
+            }
+
+            // Shrapnel burst destroys nearby 1HP minions within 140px
+            this.enemies.forEach(other => {
+              if (other !== enemy && !other.isDead && !other.isTank && Math.hypot(other.x - enemy.x, other.y - enemy.y) < 140) {
+                this.onEnemyDefeated(other, '#22C55E');
+              }
+            });
+            this.spawnDeathExplosion(this.WALL_X + 16, enemy.y + enemy.height / 2, '#22C55E', false);
+            this.playCombatSound('tank_kill');
             continue;
           } else {
             this.triggerGameOver();
@@ -2106,6 +2423,44 @@
         ctx.restore();
       }
 
+      // Active Thorned Calligraphy Barrier Spikes
+      if (this.thornedTimer > 0) {
+        ctx.save();
+        const barX = wallX + 16;
+        ctx.strokeStyle = '#22C55E';
+        ctx.lineWidth = 6;
+        ctx.shadowColor = '#16A34A';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(barX, 0);
+        ctx.lineTo(barX, this.CANVAS_HEIGHT);
+        ctx.stroke();
+
+        ctx.fillStyle = '#22C55E';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        const thornSpacing = 36;
+        for (let y = 18; y < this.CANVAS_HEIGHT; y += thornSpacing) {
+          ctx.beginPath();
+          ctx.moveTo(barX, y - 9);
+          ctx.lineTo(barX + 22, y);
+          ctx.lineTo(barX, y + 9);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Active Chrono Bolt Time Dilation Border
+      if (this.chronoTimer > 0) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(4, 4, this.CANVAS_WIDTH - 8, this.CANVAS_HEIGHT - 8);
+        ctx.restore();
+      }
+
       // Vertical Margin Label
       ctx.save();
       ctx.translate(22, this.CANVAS_HEIGHT / 2);
@@ -2163,6 +2518,11 @@
         this.animFrameId = null;
       }
 
+      if (this.pauseModal) {
+        this.pauseModal.classList.add('hidden');
+      }
+      this.updatePauseButtonUI(false);
+
       this.playCombatSound('game_over');
       const isNewRecord = this.saveHighScore();
 
@@ -2186,6 +2546,70 @@
       }
 
       console.log(`💀 Game Over: City Wall breached! Final Score: ${this.score}`);
+    }
+
+    // =========================================================================
+    // Pause & Restart Management
+    // =========================================================================
+
+    togglePause() {
+      if (!this.isRunning || this.isGameOver) return;
+      if (this.loadoutModal && !this.loadoutModal.classList.contains('hidden')) return;
+      if (this.levelUpModal && !this.levelUpModal.classList.contains('hidden')) return;
+
+      if (this.isPaused) {
+        this.resume();
+      } else {
+        this.pause();
+      }
+    }
+
+    pause() {
+      if (!this.isRunning || this.isGameOver || this.isPaused) return;
+      this.isPaused = true;
+      if (this.pauseModal) {
+        this.pauseModal.classList.remove('hidden');
+      }
+      this.updatePauseButtonUI(true);
+      this.playCombatSound('click');
+    }
+
+    resume() {
+      if (!this.isPaused) return;
+      this.isPaused = false;
+      this.lastTimestamp = 0;
+      if (this.pauseModal) {
+        this.pauseModal.classList.add('hidden');
+      }
+      this.updatePauseButtonUI(false);
+      this.playCombatSound('click');
+    }
+
+    updatePauseButtonUI(isPaused) {
+      const btn = document.getElementById('btnInkslaughtPause');
+      const icon = document.getElementById('inkslaughtPauseIcon');
+      const text = document.getElementById('inkslaughtPauseText');
+      if (icon) icon.textContent = isPaused ? '▶️' : '⏸️';
+      if (text) text.textContent = isPaused ? 'Resume' : 'Pause';
+      if (btn) {
+        btn.title = isPaused ? 'Resume Game (P or Esc)' : 'Pause Game (P or Esc)';
+        btn.classList.toggle('active-paused', isPaused);
+      }
+    }
+
+    requestRestart() {
+      // 1. Hide active Game Over and Pause modals
+      if (this.modalOverlay) this.modalOverlay.classList.add('hidden');
+      if (this.pauseModal) this.pauseModal.classList.add('hidden');
+      if (this.levelUpModal) this.levelUpModal.classList.add('hidden');
+
+      // 2. Halt active gameplay loop and reset pause state
+      this.isPaused = true;
+      this.isGameOver = false;
+      this.updatePauseButtonUI(false);
+
+      // 3. Prompt player to select 3 Grimoire spells again before starting fresh run
+      this.openLoadoutModal(true);
     }
 
     restart() {
@@ -2235,12 +2659,24 @@
       this.vortex.active = false;
       this.screenFlash = 0;
 
+      this.thornedTimer = 0.0;
+      this.thornedCooldown = 0.0;
+      this.chronoTimer = 0.0;
+      this.chronoCooldown = 0.0;
+      this.passiveSiphonKills = 0;
+      this.killStreak = 0;
+
       if (this.modalOverlay) {
         this.modalOverlay.classList.add('hidden');
       }
+      if (this.pauseModal) {
+        this.pauseModal.classList.add('hidden');
+      }
+      this.updatePauseButtonUI(false);
 
       this.updateSequenceUI();
       this.renderGrimoireSpells();
+      this.renderGrimoirePassive();
       this.updateHUD();
       this.clearSkillPad();
 
@@ -2282,12 +2718,18 @@
       if (this.modalOverlay) {
         this.modalOverlay.classList.add('hidden');
       }
+      if (this.pauseModal) {
+        this.pauseModal.classList.add('hidden');
+      }
       if (this.loadoutModal) {
         this.loadoutModal.classList.add('hidden');
       }
       if (this.levelUpModal) {
         this.levelUpModal.classList.add('hidden');
       }
+
+      this.isPaused = false;
+      this.updatePauseButtonUI(false);
 
       document.body.classList.remove('inkslaught-mode-active');
 

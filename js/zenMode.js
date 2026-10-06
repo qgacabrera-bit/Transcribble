@@ -688,7 +688,16 @@ class ZenModeManager {
     };
 
     if (soloItemZen) {
-      soloItemZen.addEventListener('click', () => selectSoloMode('zen'));
+      soloItemZen.addEventListener('click', () => {
+        selectSoloMode('zen');
+        if (typeof window.showComicBurst === 'function') {
+          window.showComicBurst(soloItemZen, {
+            mode: 'solo',
+            word: 'ZEN!',
+            subtext: 'MIRROR FLOW ★'
+          });
+        }
+      });
       soloItemZen.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -698,7 +707,16 @@ class ZenModeManager {
     }
 
     if (soloItemAcademy) {
-      soloItemAcademy.addEventListener('click', () => selectSoloMode('academy'));
+      soloItemAcademy.addEventListener('click', () => {
+        selectSoloMode('academy');
+        if (typeof window.showComicBurst === 'function') {
+          window.showComicBurst(soloItemAcademy, {
+            mode: 'solo',
+            word: 'SKETCH!',
+            subtext: 'ACADEMY ★'
+          });
+        }
+      });
       soloItemAcademy.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -708,7 +726,16 @@ class ZenModeManager {
     }
 
     if (soloItemInkslaught) {
-      soloItemInkslaught.addEventListener('click', () => selectSoloMode('inkslaught'));
+      soloItemInkslaught.addEventListener('click', () => {
+        selectSoloMode('inkslaught');
+        if (typeof window.showComicBurst === 'function') {
+          window.showComicBurst(soloItemInkslaught, {
+            mode: 'solo',
+            word: 'SLASH!',
+            subtext: 'INK ARCADE ★'
+          });
+        }
+      });
       soloItemInkslaught.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

@@ -210,6 +210,12 @@
       if (this.modeBtnImpostor) {
         this.modeBtnImpostor.addEventListener('click', () => {
           this.setLocalMode('impostor');
+          if (typeof window.showComicBurst === 'function') {
+            window.showComicBurst(this.modeBtnImpostor, {
+              mode: 'impostor',
+              subtext: 'IMPOSTOR ★'
+            });
+          }
         });
       }
       if (this.modeBtnClassic) {
@@ -344,6 +350,9 @@
         }
       }
       window.selectedGameMode = mode;
+      if (typeof window.renderLandingRoomOptions === 'function') {
+        window.renderLandingRoomOptions();
+      }
       if (this.socket) {
         const isGameActive = (typeof window.isGameInProgress === 'function')
           ? window.isGameInProgress()

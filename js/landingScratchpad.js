@@ -278,24 +278,5 @@
         }
       }, { passive: true });
     }
-
-    // Game Mode Card Interactions (Landing Page)
-    const lockedModeBtns = document.querySelectorAll('.mode-btn-locked');
-    lockedModeBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (typeof window.showToast === 'function') {
-          window.showToast('This game mode is coming in an upcoming update! 🔒✨', 'info', '⏳', 2800);
-        }
-      });
-    });
-
-    const modeBtnClassic = document.getElementById('modeBtnClassic');
-    if (modeBtnClassic) {
-      modeBtnClassic.addEventListener('click', () => {
-        if (typeof window.showToast === 'function') {
-          window.showToast('Classic Mode selected: 1 Blind Drawer + Clue Describers 🎨', 'info', '✅', 2200);
-        }
-      });
-    }
   });
 })();

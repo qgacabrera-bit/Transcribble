@@ -839,6 +839,84 @@ body.inkslaught-mode-active .bg-doodle-hint {
 }
 
 /* ==========================================================================
+   Pause Screen Overlay & Green Play Button
+   ========================================================================== */
+.pause-screen-overlay {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.2s ease;
+}
+
+.pause-screen-overlay.hidden {
+  display: none !important;
+}
+
+.btn-pause-play {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background: #22C55E;
+  border: 4.5px solid #000000;
+  box-shadow: 6px 6px 0px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: #FFFFFF;
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.18s ease, background 0.15s ease;
+  outline: none;
+  user-select: none;
+  animation: pausePlayPopIn 0.24s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-pause-play .pause-play-icon {
+  width: 52px;
+  height: 52px;
+  fill: #FFFFFF;
+  margin-left: 6px; /* optically centers the triangle inside the circle */
+  filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.45));
+  transition: transform 0.15s ease;
+}
+
+.btn-pause-play:hover {
+  background: #16A34A;
+  transform: scale(1.12) translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000000;
+}
+
+.btn-pause-play:hover .pause-play-icon {
+  transform: scale(1.08);
+}
+
+.btn-pause-play:active {
+  transform: scale(0.94) translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+@keyframes pausePlayPopIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.btn-inkslaught-action.active-paused {
+  background: #22C55E !important;
+  color: #FFFFFF !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  animation: pausePulse 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes pausePulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* ==========================================================================
    Loadout Selector Modal (Pick 3 Arcane Spells)
    ========================================================================== */
 .loadout-card {
@@ -947,6 +1025,164 @@ body.inkslaught-mode-active .bg-doodle-hint {
   font-weight: 800;
   color: #000000;
   margin: 6px 0 10px 0;
+}
+
+/* ==========================================================================
+   Equipped Passive Sigil Widget in Sidebar
+   ========================================================================== */
+.grimoire-passive-box {
+  background: #FFFFFF;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 3.5px 3.5px 0px #000000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.passive-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.passive-box-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.passive-box-icon {
+  font-size: 1.2rem;
+}
+
+.passive-box-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #000000;
+}
+
+.passive-box-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1.5px solid #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #FEF08A;
+}
+
+.passive-box-badge.badge-active {
+  background: #22C55E !important;
+  color: #FFFFFF !important;
+  animation: pausePulse 1s infinite alternate;
+}
+
+.passive-box-badge.badge-cd {
+  background: #E2E8F0 !important;
+  color: #64748B !important;
+}
+
+.passive-box-desc {
+  font-size: 0.72rem;
+  color: #4B5563;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Loadout Modal Section Headers & Passives Grid
+   ========================================================================== */
+.loadout-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #000000;
+  padding-bottom: 4px;
+  margin-top: 8px;
+}
+
+.loadout-section-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #000000;
+  letter-spacing: 0.4px;
+}
+
+.loadout-section-count {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #4F46E5;
+  background: #EEF2FF;
+  border: 1.5px solid #000000;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.loadout-passives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin: 10px 0 6px 0;
+  text-align: left;
+}
+
+.loadout-passive-item {
+  background: #FFFFFF;
+  border: 2.5px solid #000000;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 3px 3px 0px #000000;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  user-select: none;
+}
+
+.loadout-passive-item:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0px #000000;
+  background: #F0FDF4;
+}
+
+.loadout-passive-item.selected {
+  background: #DCFCE7 !important;
+  border-color: #000000;
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.loadout-passive-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.loadout-passive-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadout-passive-icon {
+  font-size: 1.35rem;
+}
+
+.loadout-passive-name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #000000;
+}
+
+.loadout-passive-desc {
+  font-size: 0.74rem;
+  color: #374151;
+  line-height: 1.35;
+  margin: 0;
 }
 
 /* ==========================================================================

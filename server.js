@@ -213,8 +213,9 @@ function generateRoomId() {
 /**
  * Creates and initializes a new Room
  */
-function createRoom(requestedId = null, isCustom = false) {
+function createRoom(requestedId = null, isCustom = false, initialMode = 'classic') {
   const id = (requestedId && requestedId.toUpperCase().trim()) || generateRoomId();
+  const safeMode = (initialMode === 'impostor') ? 'impostor' : 'classic';
   const room = {
     id,
     isCustom,
@@ -242,12 +243,13 @@ function createRoom(requestedId = null, isCustom = false) {
       tabooViolations: 0
     },
     timerInterval: null,
-    selectedMode: 'classic', // 'classic' | 'impostor'
+    selectedMode: safeMode, // 'classic' | 'impostor'
     usedWords: new Set(),
     impostorGame: null
   };
   rooms.set(id, room);
-  console.log(`[Room] Created room ${id} (custom: ${isCustom}). Active rooms: ${rooms.size}`);
+  console.log(`[Room] Created room ${id} (custom: ${isCustom}, mode: ${safeMode}). Active rooms: ${rooms.size}`);
+  broadcastOpenRoomsSummary();
   return room;
 }
 
@@ -273,16 +275,71 @@ function getPublicUsers(room) {
 }
 
 /**
- * Finds an open room in LOBBY phase with available player slots, or creates a new one
+ * Finds an open room in LOBBY phase matching a specific mode
  */
-function findOrCreateMatchmakingRoom() {
+function findOpenRoomWithMode(mode = 'classic') {
   for (const room of rooms.values()) {
     const activeCount = Array.from(room.connectedUsers.values()).filter(u => !u.disconnected).length;
-    if (room.gameState.phase === PHASES.LOBBY && activeCount < MAX_ROOM_PLAYERS) {
+    if (room.gameState.phase === PHASES.LOBBY && activeCount < MAX_ROOM_PLAYERS && !room.isCustom && room.selectedMode === mode) {
       return room;
     }
   }
-  return createRoom(null, false);
+  return null;
+}
+
+/**
+ * Finds alternative open rooms in LOBBY phase that have a DIFFERENT mode than preferredMode
+ */
+function findAlternativeOpenRooms(preferredMode = 'classic') {
+  const alts = [];
+  for (const room of rooms.values()) {
+    const activeCount = Array.from(room.connectedUsers.values()).filter(u => !u.disconnected).length;
+    if (room.gameState.phase === PHASES.LOBBY && activeCount < MAX_ROOM_PLAYERS && !room.isCustom && room.selectedMode !== preferredMode) {
+      const hostUser = room.connectedUsers.get(room.hostId);
+      alts.push({
+        id: room.id,
+        mode: room.selectedMode || 'classic',
+        playerCount: activeCount,
+        maxPlayers: MAX_ROOM_PLAYERS,
+        hostUsername: hostUser ? hostUser.username : 'Host'
+      });
+    }
+  }
+  return alts;
+}
+
+/**
+ * Returns a summary of all public lobby rooms currently open for players
+ */
+function getOpenRoomsSummary() {
+  const list = [];
+  for (const room of rooms.values()) {
+    const activeCount = Array.from(room.connectedUsers.values()).filter(u => !u.disconnected).length;
+    if (room.gameState.phase === PHASES.LOBBY && activeCount < MAX_ROOM_PLAYERS && !room.isCustom) {
+      const hostUser = room.connectedUsers.get(room.hostId);
+      list.push({
+        id: room.id,
+        mode: room.selectedMode || 'classic',
+        playerCount: activeCount,
+        maxPlayers: MAX_ROOM_PLAYERS,
+        hostUsername: hostUser ? hostUser.username : 'Host'
+      });
+    }
+  }
+  return list;
+}
+
+function broadcastOpenRoomsSummary() {
+  io.emit('open-rooms-summary', getOpenRoomsSummary());
+}
+
+/**
+ * Finds an open room in LOBBY phase with available player slots, or creates a new one
+ */
+function findOrCreateMatchmakingRoom(preferredMode = 'classic') {
+  const exactRoom = findOpenRoomWithMode(preferredMode);
+  if (exactRoom) return exactRoom;
+  return createRoom(null, false, preferredMode);
 }
 
 function getSocketRoom(socketId) {
@@ -462,6 +519,7 @@ function joinSocketToRoom(socket, room, rawUsername, sessionToken) {
 
     socket.emit('room-joined', {
       roomId: room.id,
+      selectedMode: room.selectedMode || 'classic',
       currentUser: getPublicUser(existingUser, room),
       users: getPublicUsers(room),
       drawingHistory: room.drawingHistory,
@@ -533,6 +591,7 @@ function joinSocketToRoom(socket, room, rawUsername, sessionToken) {
 
   socket.emit('room-joined', {
     roomId: room.id,
+    selectedMode: room.selectedMode || 'classic',
     currentUser: getPublicUser(user, room),
     users: getPublicUsers(room),
     drawingHistory: room.drawingHistory,
@@ -559,6 +618,7 @@ function joinSocketToRoom(socket, room, rawUsername, sessionToken) {
   socket.emit('game-state-sync', getSanitizedState(room, socket.id));
   broadcastSanitizedState(room);
   broadcastNotification(room, `${user.username} joined the party!`, 'info', '👋', 2500);
+  broadcastOpenRoomsSummary();
 }
 
 /**
@@ -646,12 +706,14 @@ function finalizePlayerLeave(room, socketId, user) {
     room.disconnectTimers.clear();
     rooms.delete(room.id);
     console.log(`[Room] Room ${room.id} deleted (all players departed). Active rooms: ${rooms.size}`);
+    broadcastOpenRoomsSummary();
     return;
   }
 
   assignNewHostIfNeeded(room);
   broadcastSanitizedState(room);
   io.to(room.id).emit('players-update', getPublicUsers(room));
+  broadcastOpenRoomsSummary();
 
   if (room.impostorGame) {
     room.impostorGame.handleDisconnect(socketId);
@@ -998,12 +1060,56 @@ function returnToLobby(room, reason) {
 
 io.on('connection', (socket) => {
   console.log(`[Socket] Client connected: ${socket.id}`);
+  socket.emit('open-rooms-summary', getOpenRoomsSummary());
+
+  socket.on('get-open-rooms', () => {
+    socket.emit('open-rooms-summary', getOpenRoomsSummary());
+  });
 
   // 1. Matchmaking: Join Random Match
   socket.on('join-random-match', (data) => {
     const username = (data && data.username) ? String(data.username) : '';
     const sessionToken = (data && data.sessionToken) ? String(data.sessionToken) : '';
-    const room = findOrCreateMatchmakingRoom();
+    const preferredMode = (data && data.mode === 'impostor') ? 'impostor' : 'classic';
+    const forceCreate = Boolean(data && data.forceCreate);
+    const directJoinRoomId = (data && data.directJoinRoomId) ? String(data.directJoinRoomId).trim().toUpperCase() : null;
+
+    // A. Direct Join Alternative Room if user chose it
+    if (directJoinRoomId) {
+      const room = rooms.get(directJoinRoomId);
+      if (room) {
+        joinSocketToRoom(socket, room, username, sessionToken);
+        return;
+      }
+    }
+
+    // B. User explicitly forced creation of their chosen mode
+    if (forceCreate) {
+      const room = createRoom(null, false, preferredMode);
+      joinSocketToRoom(socket, room, username, sessionToken);
+      return;
+    }
+
+    // C. Search for open room with the preferred mode
+    const matchingRoom = findOpenRoomWithMode(preferredMode);
+    if (matchingRoom) {
+      joinSocketToRoom(socket, matchingRoom, username, sessionToken);
+      return;
+    }
+
+    // D. No matching room found. Check if alternative rooms exist
+    const altRooms = findAlternativeOpenRooms(preferredMode);
+    if (altRooms.length > 0) {
+      // Alternatives exist: send to client to offer joining alternative room or waiting 10s / creating
+      socket.emit('matchmaking-alternatives-available', {
+        preferredMode,
+        alternativeRooms: altRooms
+      });
+      return;
+    }
+
+    // E. No rooms of any kind available: automatically create room with chosen mode
+    const room = createRoom(null, false, preferredMode);
     joinSocketToRoom(socket, room, username, sessionToken);
   });
 
@@ -1011,7 +1117,8 @@ io.on('connection', (socket) => {
   socket.on('create-custom-game', (data) => {
     const username = (data && data.username) ? String(data.username) : '';
     const sessionToken = (data && data.sessionToken) ? String(data.sessionToken) : '';
-    const room = createRoom(null, true);
+    const mode = (data && data.mode === 'impostor') ? 'impostor' : 'classic';
+    const room = createRoom(null, true, mode);
     joinSocketToRoom(socket, room, username, sessionToken);
   });
 
@@ -1105,6 +1212,7 @@ io.on('connection', (socket) => {
     });
     broadcastNotification(room, `Game Mode set to: ${modeLabel}`, 'info', '🎮', 3000);
     broadcastSanitizedState(room);
+    broadcastOpenRoomsSummary();
   });
 
   // 4.2 Cast Vote (Impostor Mode)
